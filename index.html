@@ -3,119 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mon OCR Scanner - စက်ဗှ်လိက်မန်</title>
+    <title>Mon OCR Scanner Pro</title>
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
-    
     <style>
-        :root {
-            --mon-red: #d32f2f;
-            --mon-gold: #ffc107;
-        }
-        body {
-            font-family: "Pyidaungsu", "Mon3", sans-serif;
-            background-color: #f0f2f5;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-        }
-        .container {
-            background: white;
-            max-width: 700px;
-            width: 100%;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            border-top: 8px solid var(--mon-red);
-        }
-        h1 { color: var(--mon-red); margin-bottom: 10px; }
-        .subtitle { color: #666; margin-bottom: 25px; }
-        
-        .upload-section {
-            border: 2px dashed #ccc;
-            padding: 20px;
-            border-radius: 10px;
-            background: #fafafa;
-            margin-bottom: 20px;
-        }
-        
-        #preview-image {
-            max-width: 100%;
-            max-height: 300px;
-            border-radius: 8px;
-            margin: 15px 0;
-            display: none;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-        
-        button {
-            background-color: var(--mon-red);
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            border-radius: 50px;
-            transition: 0.3s;
-            width: 100%;
-        }
-        button:hover { background-color: #b71c1c; transform: translateY(-2px); }
-        button:disabled { background-color: #ccc; cursor: not-allowed; }
-
-        #result-area { margin-top: 25px; text-align: left; }
-        textarea {
-            width: 100%;
-            height: 200px;
-            padding: 15px;
-            font-family: "Pyidaungsu", "Mon3", serif;
-            font-size: 18px;
-            border: 2px solid #eee;
-            border-radius: 10px;
-            resize: vertical;
-            box-sizing: border-box;
-        }
-        .status-msg { margin: 10px 0; font-weight: bold; color: #555; }
+        :root { --mon-red: #d32f2f; }
+        body { font-family: "Pyidaungsu", "Mon3", sans-serif; background-color: #f8f9fa; padding: 20px; display: flex; justify-content: center; }
+        .container { background: white; max-width: 800px; width: 100%; padding: 25px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); border-top: 6px solid var(--mon-red); }
+        h2 { color: var(--mon-red); margin-top: 0; }
+        .upload-box { border: 2px dashed #bbb; padding: 20px; border-radius: 8px; background: #fff; margin-bottom: 20px; position: relative; }
+        #preview-image { max-width: 100%; border-radius: 5px; margin-top: 10px; display: none; filter: grayscale(100%) contrast(150%); }
+        button { background-color: var(--mon-red); color: white; border: none; padding: 12px 25px; font-size: 18px; cursor: pointer; border-radius: 6px; width: 100%; font-weight: bold; }
+        button:disabled { background-color: #aaa; }
+        #output-text { width: 100%; height: 300px; margin-top: 20px; padding: 15px; font-size: 17px; border: 1px solid #ddd; border-radius: 8px; line-height: 1.6; }
+        .status { font-weight: bold; color: #555; margin: 10px 0; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>🔎 Mon OCR Scanner</h1>
-    <p class="subtitle">စက်ဗှ်လိက်မန် နူဗီုရုပ် (Mon Optical Character Recognition)</p>
+    <h2>🔎 Mon OCR Scanner (Improved)</h2>
+    <p>ပလေဝ်လဝ် သွက်ဂွံ Scan လိက်မန် ကၠးကၠး</p>
 
-    <div class="upload-section">
+    <div class="upload-box">
         <input type="file" id="uploader" accept="image/*" onchange="previewImage()">
-        <center><img id="preview-image" alt="Preview"></center>
+        <center><img id="preview-image" id="target-img"></center>
     </div>
 
-    <button id="scan-btn" onclick="performOCR()">Scan လိက် (ဗှ်ကေတ်)</button>
-
-    <div id="result-area">
-        <p id="status" class="status-msg"></p>
-        <textarea id="output-text" placeholder="လိက်မန် မဗှ်ဂွံတအ် တိတ်ကၠုင်ဒၞာဲဏအ်ရ..."></textarea>
-    </div>
+    <button id="scan-btn" onclick="performOCR()">စ Scan လိက် (Start Scanning)</button>
     
-    <p style="font-size: 12px; color: #999; margin-top: 20px;">Developed for Mon Language Study</p>
+    <p id="status" class="status"></p>
+    <textarea id="output-text" placeholder="လိက်မန် မဗှ်ဂွံတအ် တိတ်ကၠုင်ဒၞာဲဏအ်ရ..."></textarea>
 </div>
 
 <script>
-    // နဲကဲပလေဝ်အက္ခရ်မန် (Mapping Burmese-style OCR to Mon script)
-    function fixMonScript(text) {
-        const monMap = {
-            "င": "ၚ", // Nga
-            "ၺ": "ည", // Nya
-            "ၡ": "ၝ", // Mbba
-            "ၚ်": "င်", // Fix potential nasal issues
-            "ဒှ်": "ဒှ်", // Common word check
-        };
-
-        let fixedText = text;
-        for (let key in monMap) {
-            let regex = new RegExp(key, 'g');
-            fixedText = fixedText.replace(regex, monMap[key]);
-        }
-        return fixedText;
+    // နဲကဲပလေဝ်အက္ခရ် (Post-processing)
+    function cleanMonText(text) {
+        return text
+            .replace(/င/g, "ၚ")
+            .replace(/ၺ/g, "ည")
+            .replace(/ၡ/g, "ၝ")
+            .replace(/[|] /g, "") // ပလေဝ်သင်္ကေတလိုင်း
+            .replace(/[0-9@#$%^&*]/g, "") // ပ္ဍဲဒၞာဲမန်ဇေတ်ဇေတ် ယဝ်ရသင်္ချာပါမ္ဂး ပလီုထောံ
+            .trim();
     }
 
     function previewImage() {
@@ -133,28 +62,31 @@
         const output = document.getElementById('output-text');
         const btn = document.getElementById('scan-btn');
 
-        if (!file) {
-            alert("ဂရုစွံတုဲ ရွေးကေတ် ဗီုရုပ်မွဲမွဲ ကၠာညိအဴ။");
-            return;
-        }
+        if (!file) { alert("ရွေးကေတ် ဗီုရုပ်မွဲမွဲညိ"); return; }
 
         btn.disabled = true;
-        status.innerText = "⏳ မင်မွဲချိုန်ခဏ... စက်မံင်ဗှ်လိက် (Processing)...";
-        output.value = "";
-
+        status.innerText = "⏳ စက်မံင်ဗှ်လိက်မန် (Processing Mon Script)...";
+        
         try {
-            const worker = await Tesseract.createWorker('mya'); // စကာ mya သွက်အက္ခရ်သဇိုင်
+            // စကာ Worker နကဵု Configuration တၟေင်
+            const worker = await Tesseract.createWorker('mya', 1, {
+                logger: m => {
+                    if(m.status === 'recognizing text') {
+                        status.innerText = `⏳ ဗှ်မံင်လိက်: ${Math.round(m.progress * 100)}%`;
+                    }
+                }
+            });
+
             const { data: { text } } = await worker.recognize(file);
             
-            // စကာ Function ပလေဝ်လိက်မန်
-            const correctedText = fixMonScript(text);
+            // ပလေဝ်လိက် ညံင်ဂွံဒှ်မန်
+            const result = cleanMonText(text);
+            output.value = result;
             
-            output.value = correctedText;
             status.innerText = "✅ Scan တုဲဒှ်ရ!";
             await worker.terminate();
         } catch (err) {
-            console.error(err);
-            status.innerText = "❌ ဗၠေတ်မံင်ညိ! စမ်မွဲဝါပၠန်ညိ။";
+            status.innerText = "❌ Error: " + err;
         } finally {
             btn.disabled = false;
         }
