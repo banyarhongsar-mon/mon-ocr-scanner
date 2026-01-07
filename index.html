@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="mnw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon OCR Scanner - စက်ဗှ်လိက်မန်</title>
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
+    
+    <style>
+        body {
+            font-family: "Pyidaungsu", "Mon3", sans-serif;
+            background-color: #f4f4f9;
+            text-align: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        h1 { color: #d32f2f; }
+        input[type="file"] {
+            margin: 20px 0;
+            padding: 10px;
+        }
+        #preview-image {
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            display: none;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        #result-area {
+            margin-top: 20px;
+            text-align: left;
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            font-family: "Pyidaungsu", sans-serif;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .loading { color: #888; font-style: italic; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🔎 Mon OCR Scanner</h1>
+    <p>ရွေးကေတ် ဗီုရုပ်လိက်မန် တုဲဍဵု Scan ညိ</p>
+
+    <input type="file" id="uploader" accept="image/*" onchange="previewImage()">
+    
+    <br>
+    <img id="preview-image" alt="Image Preview">
+    <br>
+
+    <button onclick="performOCR()">Scan လိက် (ဗှ်ကေတ်)</button>
+
+    <div id="result-area">
+        <h3>အဖြေ (Result):</h3>
+        <p id="status" class="loading"></p>
+        <textarea id="output-text" placeholder="လိက်မန် တိတ်ကၠုင် ဒၞာဲဏအ်ရ..."></textarea>
+    </div>
+</div>
+
+<script>
+    // 1. Preview the image (ထ္ၜးဗီုရုပ် ကၠာဟွံ scan)
+    function previewImage() {
+        const file = document.getElementById('uploader').files[0];
+        const preview = document.getElementById('preview-image');
+        
+        if (file) {
+            preview.style.display = 'block';
+            preview.src = URL.createObjectURL(file);
+        }
+    }
+
+    // 2. Run OCR Function (ကမၠောန် Scan လိက်)
+    function performOCR() {
+        const file = document.getElementById('uploader').files[0];
+        const status = document.getElementById('status');
+        const output = document.getElementById('output-text');
+
+        if (!file) {
+            alert("ယွံ! ဂရုစွံတုဲ ရွေးကေတ် ဗီုရုပ်မွဲမွဲ ကၠာညိအဴ။");
+            return;
+        }
+
+        status.innerText = "ဗှ်မံင်လိက်... မၚ်မွဲချိုန်ခဏ (Processing...)...";
+        output.value = "";
+
+        // Tesseract.js recognizing 'mya' (Myanmar Script covers Mon)
+        Tesseract.recognize(
+            file,
+            'mya', // Note: We use 'mya' because Mon shares the Myanmar script
+            {
+                logger: m => console.log(m) // See progress in Console
+            }
+        ).then(({ data: { text } }) => {
+            status.innerText = "Scan တုဲဒှ်ရ! (Done)";
+            output.value = text;
+        }).catch(err => {
+            console.error(err);
+            status.innerText = "ဗၠေတ်မံင်ညိ! (Error occurred)";
+        });
+    }
+</script>
+
+</body>
+</html>
