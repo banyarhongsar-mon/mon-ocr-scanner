@@ -36,15 +36,54 @@
 </div>
 
 <script>
-    // နဲကဲပလေဝ်အက္ခရ် (Post-processing)
-    function cleanMonText(text) {
+    // ၁. Function သွက်ဂွံပလေဝ်လိက်
+    function fixMonScript(text) {
         return text
             .replace(/င/g, "ၚ")
-            .replace(/ၺ/g, "ည")
+            .replace(/ည/g, "ည")
             .replace(/ၡ/g, "ၝ")
-            .replace(/[|] /g, "") // ပလေဝ်သင်္ကေတလိုင်း
-            .replace(/[0-9@#$%^&*]/g, "") // ပ္ဍဲဒၞာဲမန်ဇေတ်ဇေတ် ယဝ်ရသင်္ချာပါမ္ဂး ပလီုထောံ
-            .trim();
+            .replace(/ၢ/g, "ၟ")
+            .replace(/ွ/g, "ၞ")
+            .replace(/း/g, "း")
+            .replace(/[|] /g, ""); 
+    }
+
+    async function performOCR() {
+        const file = document.getElementById('uploader').files[0];
+        const status = document.getElementById('status');
+        const output = document.getElementById('output-text');
+        const btn = document.getElementById('scan-btn');
+
+        if (!file) { alert("ရွေးကေတ် ဗီုရုပ်မွဲမွဲညိ"); return; }
+
+        btn.disabled = true;
+        status.innerText = "⏳ စက်မံင်ဗှ်လိက်မန် (Processing Mon Script)...";
+        
+        try {
+            // စကာ mnw data နူ GitHub
+            const worker = await Tesseract.createWorker('mnw', 1, {
+                langPath: 'https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/main',
+                logger: m => {
+                    if(m.status === 'recognizing text') {
+                        status.innerText = `⏳ ဗှ်မံင်လိက်: ${Math.round(m.progress * 100)}%`;
+                    }
+                }
+            });
+
+            const { data: { text } } = await worker.recognize(file);
+            
+            // ၂. ကော်စကာ Function ပလေဝ်လိက်
+            const correctedText = fixMonScript(text);
+            
+            output.value = correctedText;
+            status.innerText = "✅ Scan တုဲဒှ်ရ!";
+            await worker.terminate();
+        } catch (err) {
+            console.error(err);
+            status.innerText = "❌ Error: " + err;
+        } finally {
+            btn.disabled = false;
+        }
     }
 
     function previewImage() {
@@ -55,41 +94,4 @@
             preview.src = URL.createObjectURL(file);
         }
     }
-
-    async function performOCR() {
-    const file = document.getElementById('uploader').files[0];
-    const status = document.getElementById('status');
-    const output = document.getElementById('output-text');
-    const btn = document.getElementById('scan-btn');
-
-    if (!file) { alert("ရွေးကေတ် ဗီုရုပ်မွဲမွဲညိ"); return; }
-
-    btn.disabled = true;
-    status.innerText = "⏳ စက်မံင်ဗှ်လိက်မန် (Using Mon mnw.traineddata)...";
-    
-    try {
-        // စကာ mnw (Mon) တိုက်ရိုက်
-        const worker = await Tesseract.createWorker('mnw', 1, {
-            // ကဵုဍေံ Download Data နူကဵု GitHub Repository ဇေတ်ဇေတ်
-            langPath: 'https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/main',
-            logger: m => {
-                if(m.status === 'recognizing text') {
-                    status.innerText = `⏳ ဗှ်မံင်လိက်: ${Math.round(m.progress * 100)}%`;
-                }
-            }
-        });
-
-        const { data: { text } } = await worker.recognize(file);
-        
-        // ပလေဝ်လိက် (Post-processing)
-        output.value = text;
-        
-        status.innerText = "✅ Scan တုဲဒှ်ရ (Mon Mode)!";
-        await worker.terminate();
-    } catch (err) {
-        console.error(err);
-        status.innerText = "❌ Error: ဍေံ Download Data ဘာသာမန် ဟွံဂွံ။ စမ်မွဲဝါပၠန်ညိ။";
-    } finally {
-        btn.disabled = false;
-    }
-}
+</script>
