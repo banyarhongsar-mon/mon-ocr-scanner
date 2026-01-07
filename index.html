@@ -57,41 +57,40 @@
     }
 
     async function performOCR() {
-        const file = document.getElementById('uploader').files[0];
-        const status = document.getElementById('status');
-        const output = document.getElementById('output-text');
-        const btn = document.getElementById('scan-btn');
+    const file = document.getElementById('uploader').files[0];
+    const status = document.getElementById('status');
+    const output = document.getElementById('output-text');
+    const btn = document.getElementById('scan-btn');
 
-        if (!file) { alert("ရွေးကေတ် ဗီုရုပ်မွဲမွဲညိ"); return; }
+    if (!file) { alert("ရွေးကေတ် ဗီုရုပ်မွဲမွဲညိ"); return; }
 
-        btn.disabled = true;
-        status.innerText = "⏳ စက်မံင်ဗှ်လိက်မန် (Processing Mon Script)...";
-        
-        try {
-            // စကာ Worker နကဵု Configuration တၟေင်
-            const worker = await Tesseract.createWorker('mya', 1, {
-                logger: m => {
-                    if(m.status === 'recognizing text') {
-                        status.innerText = `⏳ ဗှ်မံင်လိက်: ${Math.round(m.progress * 100)}%`;
-                    }
+    btn.disabled = true;
+    status.innerText = "⏳ စက်မံင်ဗှ်လိက်မန် (Using Mon mnw.traineddata)...";
+    
+    try {
+        // စကာ mnw (Mon) တိုက်ရိုက်
+        const worker = await Tesseract.createWorker('mnw', 1, {
+            // ကဵုဍေံ Download Data နူကဵု GitHub Repository ဇေတ်ဇေတ်
+            langPath: 'https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/main',
+            logger: m => {
+                if(m.status === 'recognizing text') {
+                    status.innerText = `⏳ ဗှ်မံင်လိက်: ${Math.round(m.progress * 100)}%`;
                 }
-            });
+            }
+        });
 
-            const { data: { text } } = await worker.recognize(file);
-            
-            // ပလေဝ်လိက် ညံင်ဂွံဒှ်မန်
-            const result = cleanMonText(text);
-            output.value = result;
-            
-            status.innerText = "✅ Scan တုဲဒှ်ရ!";
-            await worker.terminate();
-        } catch (err) {
-            status.innerText = "❌ Error: " + err;
-        } finally {
-            btn.disabled = false;
-        }
+        const { data: { text } } = await worker.recognize(file);
+        
+        // ပလေဝ်လိက် (Post-processing)
+        output.value = text;
+        
+        status.innerText = "✅ Scan တုဲဒှ်ရ (Mon Mode)!";
+        await worker.terminate();
+    } catch (err) {
+        console.error(err);
+        status.innerText = "❌ Error: ဍေံ Download Data ဘာသာမန် ဟွံဂွံ။ စမ်မွဲဝါပၠန်ညိ။";
+    } finally {
+        btn.disabled = false;
     }
-</script>
+}
 
-</body>
-</html>
