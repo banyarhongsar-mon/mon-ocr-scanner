@@ -1,0 +1,7 @@
+const worker = await Tesseract.createWorker({
+  logger: m => console.log(m),
+  langPath: 'https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/main', // ဒၞာဲဏအ် ဒးနွံ mnw.traineddata
+});
+
+await worker.loadLanguage('mnw'); // ဒၞာဲဏအ် စကာ mnw မာန်ယျ
+await worker.initialize('mnw');
