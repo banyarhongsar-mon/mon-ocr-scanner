@@ -22,7 +22,7 @@
 
 <div class="container">
     <h2>🔎 Mon OCR Scanner (Improved)</h2>
-    <p>ပလေဝ်လဝ် သွက်ဂွံ Scan လိက်မန် ကၠးကၠး</p>
+    <p>အဃောမစမ်ၜတ်မံၚ် လေပ်တုဲကၠောန်လဝ်ဟွံသေၚ်</p>
 
     <div class="upload-box">
         <input type="file" id="uploader" accept="image/*" onchange="previewImage()">
@@ -60,7 +60,7 @@
         status.innerText = "⏳ စက်မံင်ဗှ်လိက်မန် (Processing Mon Script)...";
         
         try {
-            // စကာ mnw data နူ GitHub
+            //  mnw data နူ GitHub
             const worker = await Tesseract.createWorker('mnw', 1, {
                 langPath: 'https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/main',
                 logger: m => {
@@ -72,7 +72,7 @@
 
             const { data: { text } } = await worker.recognize(file);
             
-            // ၂. ကော်စကာ Function ပလေဝ်လိက်
+            // Function
             const correctedText = fixMonScript(text);
             
             output.value = correctedText;
