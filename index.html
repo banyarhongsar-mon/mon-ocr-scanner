@@ -3,87 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mon OCR Scanner Pro</title>
+    <title>Mon OCR Scanner Pro (Fixed)</title>
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
     <style>
         :root { --mon-red: #d32f2f; }
         body { font-family: "Pyidaungsu", "Mon3", sans-serif; background-color: #f8f9fa; padding: 20px; display: flex; justify-content: center; }
         .container { background: white; max-width: 800px; width: 100%; padding: 25px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); border-top: 6px solid var(--mon-red); }
-        h2 { color: var(--mon-red); margin-top: 0; }
-        .upload-box { border: 2px dashed #bbb; padding: 20px; border-radius: 8px; background: #fff; margin-bottom: 20px; position: relative; }
-        #preview-image { max-width: 100%; border-radius: 5px; margin-top: 10px; display: none; filter: grayscale(100%) contrast(150%); }
+        h2 { color: var(--mon-red); margin-top: 0; text-align: center; }
+        .upload-box { border: 2px dashed #bbb; padding: 20px; border-radius: 8px; background: #fff; margin-bottom: 20px; text-align: center; }
+        #preview-image { max-width: 100%; max-height: 300px; margin-top: 10px; display: none; }
         button { background-color: var(--mon-red); color: white; border: none; padding: 12px 25px; font-size: 18px; cursor: pointer; border-radius: 6px; width: 100%; font-weight: bold; }
-        button:disabled { background-color: #aaa; }
-        #output-text { width: 100%; height: 300px; margin-top: 20px; padding: 15px; font-size: 17px; border: 1px solid #ddd; border-radius: 8px; line-height: 1.6; }
-        .status { font-weight: bold; color: #555; margin: 10px 0; }
+        button:disabled { background-color: #aaa; cursor: not-allowed; }
+        #output-text { width: 100%; height: 250px; margin-top: 20px; padding: 15px; font-size: 18px; border: 1px solid #ddd; border-radius: 8px; line-height: 1.6; font-family: "Pyidaungsu", "Mon3", serif; }
+        .status { font-weight: bold; color: #555; margin: 10px 0; text-align: center; }
+        .tips { font-size: 14px; color: #666; background: #eee; padding: 10px; border-radius: 5px; margin-top: 20px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🔎 Mon OCR Scanner (Improved)</h2>
-    <p>အဃောမစမ်ၜတ်မံၚ် လေပ်တုဲကၠောန်လဝ်ဟွံသေၚ်</p>
-
+    <h2>🔎 Mon OCR Scanner</h2>
+    
     <div class="upload-box">
         <input type="file" id="uploader" accept="image/*" onchange="previewImage()">
-        <center><img id="preview-image" id="target-img"></center>
+        <br>
+        <img id="preview-image" alt="Image Preview">
     </div>
 
-    <button id="scan-btn" onclick="performOCR()">စ Scan လိက် (Start Scanning)</button>
+    <button id="scan-btn" onclick="performOCR()">Scan လိက် (ဗှ်ကေတ်)</button>
     
     <p id="status" class="status"></p>
     <textarea id="output-text" placeholder="လိက်မန် မဗှ်ဂွံတအ် တိတ်ကၠုင်ဒၞာဲဏအ်ရ..."></textarea>
+
+    <div class="tips">
+        <b>သတိ:</b> ပိုယ်စကာမံင် `mya` (Myanmar) Model တုဲ ပလေဝ်ကေတ်နကဵု Code ရ။<br>
+        * ၚ (Mon Nga) ဂှ် ကၠာဲကဵု အလဵုအလဵုရ။<br>
+        * ဗီုရုပ် ကၠးမံင်မ္ဂး ဗှ်ဒးဂၠိုင်ရ။
+    </div>
 </div>
 
 <script>
-    // ၁. Function သွက်ဂွံပလေဝ်လိက်
+    // ၁. Function ပလေဝ်လိက် (Auto-Correction)
     function fixMonScript(text) {
         return text
-            .replace(/င/g, "ၚ")
-            .replace(/ည/g, "ည")
-            .replace(/ၡ/g, "ၝ")
-            .replace(/ၢ/g, "ၟ")
-            .replace(/ွ/g, "ၞ")
-            .replace(/း/g, "း")
-            .replace(/[|] /g, ""); 
-    }
-
-    async function performOCR() {
-        const file = document.getElementById('uploader').files[0];
-        const status = document.getElementById('status');
-        const output = document.getElementById('output-text');
-        const btn = document.getElementById('scan-btn');
-
-        if (!file) { alert("ရုဲကေတ် ဗီုရုပ်မွဲမွဲညိ"); return; }
-
-        btn.disabled = true;
-        status.innerText = "⏳ စက်မံင်ဗှ်လိက်မန် (Processing Mon Script)...";
-        
-        try {
-            //  mnw data နူ GitHub
-            const worker = await Tesseract.createWorker('mnw', 1, {
-                langPath: 'https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/main',
-                logger: m => {
-                    if(m.status === 'recognizing text') {
-                        status.innerText = `⏳ ဗှ်မံင်လိက်: ${Math.round(m.progress * 100)}%`;
-                    }
-                }
-            });
-
-            const { data: { text } } = await worker.recognize(file);
-            
-            // Function
-            const correctedText = fixMonScript(text);
-            
-            output.value = correctedText;
-            status.innerText = "✅ Scan တုဲဒှ်ရ!";
-            await worker.terminate();
-        } catch (err) {
-            console.error(err);
-            status.innerText = "❌ Error: " + err;
-        } finally {
-            btn.disabled = false;
-        }
+            // ပလေဝ် အက္ခရ်ဗၠေတ် (Common Errors)
+            .replace(/င/g, "ၚ")  // Nga
+            .replace(/ၺ/g, "ည")  // Nya
+            .replace(/ၡ/g, "ၝ")  // Mbba
+            .replace(/ၢ/g, "ၟ")   // Hma
+            .replace(/ွ/g, "ၞ")   // Na (Subscript)
+            .replace(/i/g, "၊")   // Punctuation
+            .replace(/I/g, "၊")
+            .replace(/\|/g, "၊")
+            // ပလီု သင်္ကေတ အကြုက် (Remove Noise)
+            .replace(/[0-9@#$%^&*<>]/g, " ") 
+            .trim();
     }
 
     function previewImage() {
@@ -94,4 +68,46 @@
             preview.src = URL.createObjectURL(file);
         }
     }
+
+    async function performOCR() {
+        const file = document.getElementById('uploader').files[0];
+        const status = document.getElementById('status');
+        const output = document.getElementById('output-text');
+        const btn = document.getElementById('scan-btn');
+
+        if (!file) { alert("ရွေးကေတ် ဗီုရုပ်မွဲမွဲညိ"); return; }
+
+        btn.disabled = true;
+        status.innerText = "⏳ စက်မံင်ဗှ်လိက် (Initializing Tesseract)...";
+        output.value = "";
+        
+        try {
+            // ၂. စကာ 'mya' (Myanmar) ဒၞာဲဏအ် ဒးရးအိုတ်ရ
+            const worker = await Tesseract.createWorker('mya', 1, {
+                logger: m => {
+                    if(m.status === 'recognizing text') {
+                        status.innerText = `⏳ ဗှ်မံင်လိက်: ${Math.round(m.progress * 100)}%`;
+                    }
+                }
+            });
+
+            const { data: { text } } = await worker.recognize(file);
+            
+            // ၃. ကော်စကာ Function ပလေဝ်လိက်
+            const correctedText = fixMonScript(text);
+            
+            output.value = correctedText;
+            status.innerText = "✅ Scan တုဲဒှ်ရ!";
+            await worker.terminate();
+
+        } catch (err) {
+            console.error(err);
+            status.innerText = "❌ Error: " + err.message;
+        } finally {
+            btn.disabled = false;
+        }
+    }
 </script>
+
+</body>
+</html>
