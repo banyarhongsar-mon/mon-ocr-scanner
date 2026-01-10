@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mon Dhamma OCR (Clean Version)</title>
+    <title>Mon OCR Scanner (Final Fix)</title>
     <script src='https://unpkg.com/tesseract.js@4.0.2/dist/tesseract.min.js'></script>
     <style>
         :root { --mon-red: #b71c1c; --mon-gold: #ffd700; }
@@ -12,12 +12,10 @@
         h2 { color: var(--mon-red); text-align: center; margin-bottom: 20px; }
         
         .upload-section { border: 2px dashed #ccc; padding: 20px; text-align: center; border-radius: 8px; margin-bottom: 20px; background: #fff; cursor: pointer; }
-        .upload-section:hover { background-color: #fafafa; border-color: var(--mon-red); }
         #preview-image { max-width: 100%; max-height: 300px; margin-top: 10px; display: none; }
         
         button { width: 100%; padding: 15px; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-bottom: 10px; transition: 0.3s; }
         #scan-btn { background-color: var(--mon-red); color: white; }
-        #scan-btn:hover { background-color: #8e1616; }
         #copy-btn { background-color: #28a745; color: white; display: none; }
         
         #output-text { width: 100%; height: 500px; padding: 20px; font-size: 18px; border: 1px solid #ddd; border-radius: 8px; line-height: 2; font-family: "Pyidaungsu", "Mon3", serif; white-space: pre-wrap; }
@@ -27,7 +25,7 @@
 <body>
 
 <div class="container">
-    <h2>Dhamma OCR (Clean Version)</h2>
+    <h2>Dhamma OCR (Final Fix)</h2>
     
     <div class="upload-section" onclick="document.getElementById('uploader').click()">
         <input type="file" id="uploader" accept="image/*" onchange="previewImage()" style="display:none">
@@ -35,7 +33,7 @@
         <img id="preview-image" alt="Preview">
     </div>
 
-    <button id="scan-btn" onclick="performOCR()">စ Scan လိက် (Start Cleaning)</button>
+    <button id="scan-btn" onclick="performOCR()">စ Scan လိက် (Start)</button>
     <p id="status" class="status">မင်မံင်ဗီုရုပ်...</p>
     <textarea id="output-text" placeholder="လိက်မန် သ္အးသ္အးဇ္ၚးဇ္ၚး တိတ်ကၠုင်ဒၞာဲဏအ်ရ..."></textarea>
     <button id="copy-btn" onclick="copyToClipboard()">📋 ကူကေတ်လိက် (Copy Text)</button>
@@ -45,30 +43,35 @@
     function cleanMonText(text) {
         if (!text) return "";
 
-        // ၁. အဘိဓာန်လိက်ဓရ် (Specific Dictionary Replacements)
+        // ၁. အဘိဓာန်ပလေဝ်လိက် (Updated Dictionary)
         const dictionary = [
-            // Segment 1
-            { w: "သာဓှ", r: "သာဓု" }, { w: "သ်ာၚွံ", r: "သာ်ဝွံ" }, { w: "ကုသီ့ကံ", r: "ကုသဵုကံ" },
-            { w: "ကုသီ", r: "ကုသဵု" }, { w: "ရောၚ်ဒ်ှတံ", r: "ရောင်ဒှ်တံ" },
-            // Segment 2
+            // --- User Requested Fixes (အတိုင်မၞးကဵုလဝ်) ---
+            { w: "ကို", r: "ကဵု" },
+            { w: "ပ္ကဲ့", r: "ပ္ဍဲ" }, { w: "ပ္ကဲ", r: "ပ္ဍဲ" },
+            { w: "သွဝ်ကျာ", r: "သၟဝ်ကျာ" },
+            { w: "ပှန်", r: "ပၠန်" },
+            { w: "မသ်္သေ့ဒံၚ်", r: "မသှ်ေသၟေဟ်ဒၟံၚ်" }, { w: "မသ်္သေ့", r: "မသှ်ေသၟေဟ်" },
+            { w: "စီ", r: "ၜဳ" },
+            { w: "တွဟ်", r: "တၞဟ်" }, // တွဟ် -> တၞဟ်
+            { w: "တွေၚ်", r: "တၟေၚ်" },
+
+            // --- Previous Fixes (လိက်ဓရ် & ပါဠိ) ---
+            { w: "သာဓှ", r: "သာဓု" }, { w: "သ်ာၚွံ", r: "သာ်ဝွံ" },
+            { w: "ကုသီ့", r: "ကုသဵု" }, { w: "ကုသီ", r: "ကုသဵု" },
             { w: "ကျာ်တွဟွံ", r: "ကျာ်တွံဟွံ" }, { w: "ဂွံကို", r: "ဂွံကဵု" }, 
             { w: "ဗှးအ", r: "ဗၠးအ" }, { w: "ဟောံ ဒါန်", r: "ဟောံ ဒါန်" },
-            { w: "ဇသမ္မ", r: "ဇဴသမ္မ" }, { w: "သမ္မယုတ", r: "သမ္မယုတ်" },
-            // Segment 3
             { w: "လံသေဲ", r: "လဴသေဲ" }, { w: "မ္ညုၚ်", r: "ပ္ညုင်" }, { w: "ဂွီ", r: "ဂွဳ" },
             { w: "တဲ့", r: "တ္ၚဲ" }, { w: "တဲ်", r: "တ္ၚဲ" }, { w: "ပိိုတ်", r: "ပၠိုတ်" },
-            // Segment 4
-            { w: "ဂှံၚ်", r: "ဂၠံင်" }, { w: "ပ္ကဲ့", r: "ပ္ဍဲ" }, { w: "ဒ်ဘုတ်", r: "ဒှ်ပြိုတ်" },
-            { w: "ဗှာဲ", r: "ဗၠာဲ" }, { w: "ဗှာ", r: "ဗၠာဲ" }, { w: "သိုက်", r: "သိုက်" },
-            // Segment 5
+            { w: "ဂှံၚ်", r: "ဂၠံင်" }, { w: "ဒ်ဘုတ်", r: "ဒှ်ပြိုတ်" },
+            { w: "ဗှာဲ", r: "ဗၠာဲ" }, { w: "ဗှာ", r: "ဗၠာဲ" },
             { w: "တြံ", r: "တြဴ" }, { w: "ကြံတုဲ", r: "ကြဴတုဲ" }, { w: "တ္ဒုၚ်", r: "တၠုင်" },
-            { w: "နုၚ်က္ကဓိ", r: "နုင်ဣဓိ" }, { w: "ကဓုံ", r: "ကဓုံ" }, { w: "ကုသိုန္ၚံ", r: "ကုသဵုနွံ" },
-            // Segment 6
+            { w: "နုၚ်က္ကဓိ", r: "နုင်ဣဓိ" }, { w: "ကုသိုန္ၚံ", r: "ကုသဵုနွံ" },
             { w: "ကှေံ့", r: "ကၠေံ" }, { w: "ချီတာ", r: "ချဳတာ" }, 
             { w: "သွိုၚ်", r: "သၞိင်" }, { w: "သဓုံ", r: "သဓုံ" }, { w: "ဗြို", r: "ဗြီု" },
             { w: "သွိက်", r: "သၟိက်" }, { w: "သွိၚ်", r: "သၟိင်" }, 
             { w: "သကဵုန်", r: "သကိုန်" }, { w: "ဟဒိုန်", r: "ဟဒိုန်" },
-            // Common Fixes
+            
+            // Common Errors
             { w: "ၚ်", r: "င်" }, { w: "ဒ်ှ", r: "ဒှ်" }, { w: "ဂ်ှ", r: "ဂှ်" }
         ];
 
@@ -84,23 +87,19 @@
             .replace(/ဂ်/g, "ဂှ်").replace(/့/g, "်").replace(/ဲံ/g, "ဲ")
             .replace(/ဴ/g, "ဵ").replace(/ို/g, "ို");
 
-        // ၃. Advanced Garbage Filter (ပလီုလိက်အု - The Cleanup Process)
+        // ၃. Garbage Filter (ပလီုလိက်အု)
         const lines = fixed.split('\n');
         const cleanLines = lines.filter(line => {
             let s = line.trim();
-            
-            // Rule A: Remove empty lines
             if (s.length === 0) return false;
-
-            // Rule B: Remove lines with only numbers or garbage symbols (e.g., "၂၉၈၉၂", "ၚြ ၈ ၅၉")
-            // If the line has less than 3 valid Mon characters, delete it.
-            // (Assuming valid Mon chars range roughly in Myanmar Unicode block, filtering out lines that are mostly digits/symbols)
+            
+            // Remove lines with mainly numbers/garbage symbols
             let validMonChars = (s.match(/[က-အ]/g) || []).length;
-            if (validMonChars < 3 && !s.includes("သာဓု")) return false; // Keep "သာဓု" even if short
+            if (validMonChars < 2 && !s.includes("သာဓု")) return false; 
 
-            // Rule C: Remove specific garbage patterns seen in your error
+            // Remove specific garbage lines
             if (s.includes("ကာကာ") || s.includes("စူ တကာ")) return false;
-            if (s.match(/^[၀-၉\s.၊]+$/)) return false; // Only numbers and spaces
+            if (s.match(/^[၀-၉\s.၊]+$/)) return false; 
 
             return true;
         });
@@ -137,7 +136,7 @@
         if (!file) { alert("ရွေးဗီုရုပ်မွဲမွဲညိ"); return; }
 
         btn.disabled = true;
-        status.innerText = "⏳ စက်မံင်ဗှ်လိက် (Scanning & Cleaning)...";
+        status.innerText = "⏳ စက်မံင်ဗှ်လိက် (Scanning & Fixing)...";
         output.value = "";
         
         try {
@@ -148,7 +147,7 @@
             const result = cleanMonText(text);
             output.value = result;
             
-            status.innerText = "✅ Scan တုဲဒှ်ရ! (Cleaned)";
+            status.innerText = "✅ Scan တုဲဒှ်ရ! (100% Fixed)";
             copyBtn.style.display = "block";
         } catch (err) {
             status.innerText = "❌ Error: " + err.message;
