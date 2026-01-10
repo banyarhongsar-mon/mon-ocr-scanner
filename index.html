@@ -3,80 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mon & Pali OCR Pro</title>
+    <title>Mon OCR Scanner (Pali-Mon Pro)</title>
     <script src='https://unpkg.com/tesseract.js@4.0.2/dist/tesseract.min.js'></script>
     <style>
-        :root { --mon-red: #d32f2f; --mon-green: #28a745; --mon-gold: #ffc107; }
-        body { font-family: "Pyidaungsu", "Mon3", sans-serif; background-color: #f4f4f4; padding: 20px; display: flex; justify-content: center; }
-        .container { background: white; max-width: 900px; width: 100%; padding: 30px; border-radius: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.15); border-top: 10px solid var(--mon-red); }
-        h2 { color: var(--mon-red); text-align: center; margin-bottom: 5px; }
-        .sub-title { text-align: center; color: #666; font-size: 14px; margin-bottom: 25px; }
-        
-        .upload-box { border: 2px dashed #bbb; padding: 30px; border-radius: 10px; background: #fff; margin-bottom: 20px; text-align: center; cursor: pointer; }
-        #preview-image { max-width: 100%; max-height: 350px; margin-top: 15px; display: none; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        
+        :root { --mon-red: #d32f2f; --mon-green: #28a745; }
+        body { font-family: "Pyidaungsu", "Mon3", sans-serif; background-color: #f8f9fa; padding: 20px; display: flex; justify-content: center; }
+        .container { background: white; max-width: 900px; width: 100%; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-top: 10px solid var(--mon-red); }
+        h2 { color: var(--mon-red); text-align: center; margin-bottom: 20px; }
+        .upload-box { border: 2px dashed #bbb; padding: 25px; border-radius: 10px; background: #fff; margin-bottom: 20px; text-align: center; cursor: pointer; }
+        #preview-image { max-width: 100%; max-height: 300px; margin-top: 15px; display: none; border-radius: 5px; }
         button { border: none; padding: 15px; font-size: 18px; cursor: pointer; border-radius: 8px; width: 100%; font-weight: bold; margin-bottom: 12px; transition: 0.3s; }
         #scan-btn { background-color: var(--mon-red); color: white; }
-        #scan-btn:hover { background-color: #b71c1c; transform: scale(1.01); }
-        
         #copy-btn { background-color: var(--mon-green); color: white; display: none; }
-        #copy-btn:hover { background-color: #218838; }
-
-        button:disabled { background-color: #ccc; cursor: not-allowed; }
-        
-        #output-text { width: 100%; height: 450px; padding: 15px; font-size: 19px; border: 2px solid #eee; border-radius: 10px; line-height: 1.8; font-family: "Pyidaungsu", "Mon3", serif; box-sizing: border-box; }
-        .status { font-weight: bold; color: #444; margin: 15px 0; text-align: center; }
+        #output-text { width: 100%; height: 500px; padding: 15px; font-size: 20px; border: 1px solid #ddd; border-radius: 10px; line-height: 1.8; font-family: "Pyidaungsu", "Mon3", serif; box-sizing: border-box; }
+        .status { font-weight: bold; color: #555; margin: 15px 0; text-align: center; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🔎 Mon & Pali OCR Scanner</h2>
-    <p class="sub-title">စက်ဗှ်လိက်မန် ကေုာံ လိက်ပါဠိမန် (Pali-Mon Edition)</p>
-    
+    <h2>🔎 Mon & Pali OCR Pro</h2>
     <div class="upload-box" onclick="document.getElementById('uploader').click()">
         <input type="file" id="uploader" accept="image/*" onchange="previewImage()" style="display:none">
-        <p>📷 ဍဵုဒၞာဲဏအ် သွက်ဂွံရွေးဗီုရုပ် (Click to upload image)</p>
-        <img id="preview-image" alt="Image Preview">
+        <p>📁 ဍဵုဒၞာဲဏအ် သွက်ဂွံရွေးဗီုရုပ်</p>
+        <img id="preview-image" alt="Preview">
     </div>
 
-    <button id="scan-btn" onclick="performOCR()">စ Scan လိက် (Start OCR)</button>
-    
+    <button id="scan-btn" onclick="performOCR()">စ Scan လိက် (Start)</button>
     <p id="status" class="status">မင်မံင်ဗီုရုပ်...</p>
-    
-    <textarea id="output-text" placeholder="လိက်မန် တိတ်ကၠုင်ဒၞာဲဏအ်ရ..."></textarea>
-    
+    <textarea id="output-text" placeholder="လိက်မန် မဗှ်ဂွံတအ် တိတ်ကၠုင်ဒၞာဲဏအ်ရ..."></textarea>
     <button id="copy-btn" onclick="copyToClipboard()">📋 ကူကေတ်လိက် (Copy Text)</button>
 </div>
 
 <script>
-    // --- ၁. Advanced Dictionary for Mon & Pali ---
     function fixMonScript(text) {
         if (!text) return "";
         let fixed = text;
 
+        // --- ၁. Dictionary Fixes (မအက္ခရ်ဗၠေတ် -> ဒး) ---
         const replacements = [
-            // Pali Words (ပါဠိမန်)
-            { w: "ကုသုက", r: "ကုသဵု" }, { w: "ကုသုန္ဂ", r: "ကုသဵုနွံ" }, { w: "ကုသု", r: "ကုသဵု" },
-            { w: "နိဗာန", r: "နိဗ္ဗာန်" }, { w: "နဗာန်", r: "နိဗ္ဗာန်" }, { w: "နိဗ္ဗာန", r: "နိဗ္ဗာန်" },
-            { w: "ပါရမီစှဒါန်", r: "ပါရမဳစှ် ဒါန်" }, { w: "ပါရမီ", r: "ပါရမဳ" },
-            { w: "သမ္မယုတ", r: "သမ္မယုတ်" }, { w: "ဗောဓကဓု", r: "ဗောဓိကဓုံ" },
-            { w: "ဇသမ္မ", r: "ဇဴသမ္မ" }, { w: "ဣဓ", r: "ဣဓိ" },
-            { w: "သမ္မာသမ္ဗုဒ္ဓ", r: "သမ္မာသမ္ဗုဒ္ဓ" },
-
-            // Common Mon Words (ဝေါဟာရမန်)
-            { w: "ရောၚဒ္ဝ္ဝာ", r: "ရောင်ဒှ်တံ" }, { w: "ရောၚဒ်ှ", r: "ရောင်ဒှ်" },
-            { w: "တွဟ္ဝတာပ", r: "တွံဟွံတာပ်" }, { w: "သရာံပါပ်", r: "သရာံပါပ်" },
-            { w: "လလဴ", r: "လလံ" }, { w: "လလ", r: "လလံ" },
-            { w: "ချတပွ", r: "ချိုတ်ဂွံ" }, { w: "ဗှးအဟော", r: "ဗၠးအဟောံ" },
-            { w: "ပ္က်", r: "ပ္ဍဲ" }, { w: "ပ္လဲ", r: "ပ္ဍဲ" }, { w: "ပ္ကဲ", r: "ပ္ဍဲ" },
-            { w: "သၞဝ်ကျာ", r: "သၟဝ်ကျာ" }, { w: "သၞဝ်", r: "သၟဝ်" },
-            { w: "ဗၞဲ", r: "ဗွဲ" }, { w: "လၞုဟ်", r: "လၟုဟ်" }, { w: "နၞံ", r: "နွံ" },
-            { w: "ချၚ်ဗွာ", r: "ဍုင်ဗၟာ" }, { w: "ချၚ်", r: "ဍုင်" },
-            { w: "သၟိၚ်", r: "သၟိင်" }, { w: "သၟိက်", r: "သၟိက်" },
-            { w: "ဗှာဗှာ", r: "ဗၠာဲဗၠာဲ" }, { w: "ဗှာ", r: "ဗၠာဲ" },
-            { w: "ကှေံ", r: "ကၠေံ" }, { w: "ပှန်", r: "ပၠန်" },
-            { w: "ဂ်ှ", r: "ဂှ်" }, { w: "ဒ်ှ", r: "ဒှ်" }, { w: "တုဲံ", r: "တုဲ" }
+            // Segment 1: သာဓု & ကုသဵု
+            { w: "သာဓှ", r: "သာဓု" }, { w: "သ်ာၚွံ", r: "သာ်ဝွံ" }, { w: "ကုသီ်ကံ", r: "ကုသဵုကံ" },
+            { w: "ကုသိုန္ၚံ", r: "ကုသဵုနွံ" }, { w: "ကုသုက", r: "ကုသဵု" },
+            
+            // Segment 2: ကျာ်တွံ & ဒါန်
+            { w: "ကျာ်တွဟွံ", r: "ကျာ်တွံဟွံ" }, { w: "ဂွံကို", r: "ဂွံကဵု" }, { w: "ဗှးအ", r: "ဗၠးအ" },
+            { w: "ဟောံ ဒါန်", r: "ဟောံ ဒါန်" }, { w: "ရောၚဒ္ဝ္ဝာ", r: "ရောင်ဒှ်တံ" },
+            
+            // Segment 3: ဗျုဇၞော် & တ္ၚဲ
+            { w: "ဗျုတွော်", r: "ဗျုဇၞော်" }, { w: "ဗျုဝွော", r: "ဗျုဇၞော်" },
+            { w: "အာမ္ညုၚ်", r: "အာပ္ညုင်" }, { w: "တဲ်", r: "တ္ၚဲ" },
+            { w: "ပိိုတ်", r: "ပၠိုတ်" }, { w: "ပိိုတ်", r: "ပၠိုတ်" },
+            
+            // Segment 4: ခန္ဓပၠိုတ် & ဂၠံင်
+            { w: "ဂှံၚ်လုတ်", r: "ဂၠံင်လုတ်" }, { w: "ပ္ကဲ်", r: "ပ္ဍဲ" }, { w: "ပ္လဲ", r: "ပ္ဍဲ" },
+            { w: "ဒှပြိုတ်", r: "ဒှ်ပြိုတ်" }, { w: "သှးလဝ်", r: "သၠးလဝ်" },
+            { w: "ဗှာဗှာ", r: "ဗၠာဲဗၠာဲ" }, { w: "ဗၠာဲဲဗၠာဲဲ", r: "ဗၠာဲဗၠာဲ" },
+            
+            // Segment 5: နုင်ဣဓိ & သၞိင်
+            { w: "ရေၚ်တ္ဒုၚ်", r: "ရေင်တၠုင်" }, { w: "နုၚ်က္ကဓိ", r: "နုင်ဣဓိ" },
+            { w: "သွိုၚ်သဓုံ", r: "သၞိင်သဓုံ" }, { w: "သွိုၚ်", r: "သၞိင်" }, { w: "သွိၚ်", r: "သၟိင်" },
+            
+            // Segment 6: ဂွံပလဝ် & သၟိင်ကျာ်
+            { w: "ွံပလဝ်", r: "ဂွံပလဝ်" }, { w: "သၟိက်", r: "သၟိက်" }, { w: "သၟိၚ်", r: "သၟိင်" },
+            { w: "သကဵုန်", r: "သကိုန်" }
         ];
 
         replacements.forEach(item => {
@@ -84,30 +74,37 @@
             fixed = fixed.replace(regex, item.r);
         });
 
-        // --- ၂. Stacked Character Fixes (အက္ခရ်ဆင့်) ---
+        // --- ၂. Logic Fixes (Standardize Subscripts) ---
         fixed = fixed
             .replace(/င/g, "ၚ").replace(/ၺ/g, "ည").replace(/ၡ/g, "ၝ")
             .replace(/ၢ/g, "ၟ").replace(/ဂ်/g, "ဂှ်")
-            .replace(/့/g, "်").replace(/ဲံ/g, "ဲ")
+            .replace(/ဲံ/g, "ဲ")
             .replace(/ဴ/g, "ဵ")
             .replace(/ို/g, "ို")
-            .replace(/ဝ္ဗ/g, "္ဗ") // Fix stacked Pali bba
-            .replace(/ရႈ/g, "ရ။")
-            .replace(/%/g, "။")
-            .trim();
+            .replace(/််/g, "်");
 
-        return fixed;
+        // --- ၃. Noise Cleaning (ပလီုလိက်အု/လိက်ရုသံင်) ---
+        // ပလီုထောံ Lines မနွံကဵု Character အောန်လောန် သို့မဟုတ် လိက်ရုသံင်
+        const lines = fixed.split('\n');
+        const cleanLines = lines.filter(line => {
+            const trimmed = line.trim();
+            // ယဝ်ရ Line ဂှ် ဂၠိအလောန် (Short noise) မ္ဂး ပလီုထောံ
+            if (trimmed.length < 3 && !trimmed.match(/[သာဓု]/)) return false;
+            // ယဝ်ရ Line ဂှ် နွံဆ သင်္ကေတ သၟးမ္ဂး ပလီုထောံ
+            if (trimmed.match(/^[၀-၉\s.၊#%&()\-+]*$/)) return false;
+            return true;
+        });
+
+        return cleanLines.join('\n').trim();
     }
 
-    // --- Utility Functions ---
+    // Utility Functions
     function copyToClipboard() {
         const output = document.getElementById("output-text");
-        const copyBtn = document.getElementById("copy-btn");
-        output.select();
         navigator.clipboard.writeText(output.value).then(() => {
-            const originalText = copyBtn.innerText;
-            copyBtn.innerText = "✅ ကူကေတ်တုဲရ!";
-            setTimeout(() => { copyBtn.innerText = originalText; }, 2000);
+            const btn = document.getElementById("copy-btn");
+            btn.innerText = "✅ ကူကေတ်တုဲရ!";
+            setTimeout(() => { btn.innerText = "📋 ကူကေတ်လိက် (Copy Text)"; }, 2000);
         });
     }
 
@@ -117,7 +114,7 @@
         if (file) {
             preview.style.display = 'block';
             preview.src = URL.createObjectURL(file);
-            document.getElementById('status').innerText = "ဗီုရုပ်အောပ်လုပ်တုဲရ၊ ဍဵု Scan ညိ";
+            document.getElementById('status').innerText = "ဗီုရုပ်အောပ်လုပ်တုဲရ";
         }
     }
 
@@ -128,19 +125,17 @@
         const btn = document.getElementById('scan-btn');
         const copyBtn = document.getElementById('copy-btn');
 
-        if (!file) { alert("ရွေးဗီုရုပ်မွဲမွဲညိအဴ"); return; }
+        if (!file) { alert("ရွေးဗီုရုပ်မွဲမွဲညိ"); return; }
 
         btn.disabled = true;
-        status.innerText = "⏳ စက်မံင်ဗှ်လိက် (Processing Mon-Pali)...";
+        status.innerText = "⏳ စက်မံင်ဗှ်လိက် (Pali-Mon Mode)...";
         
         try {
-            const { data: { text } } = await Tesseract.recognize(
-                file, 'mya', 
-                { logger: m => { if(m.status === 'recognizing text') status.innerText = `⏳ ဗှ်မံင်: ${Math.round(m.progress * 100)}%`; }}
-            );
+            const { data: { text } } = await Tesseract.recognize(file, 'mya', {
+                logger: m => { if(m.status === 'recognizing text') status.innerText = `⏳ ဗှ်မံင်: ${Math.round(m.progress * 100)}%`; }
+            });
             
-            const result = fixMonScript(text);
-            output.value = result;
+            output.value = fixMonScript(text);
             status.innerText = "✅ Scan တုဲဒှ်ရ!";
             copyBtn.style.display = "block";
         } catch (err) {
