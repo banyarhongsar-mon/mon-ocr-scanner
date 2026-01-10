@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mon OCR Scanner (Fast)</title>
+    <title>Mon OCR Scanner (Smart Fix)</title>
     <script src='https://unpkg.com/tesseract.js@4.0.2/dist/tesseract.min.js'></script>
     <style>
         :root { --mon-red: #d32f2f; }
@@ -14,39 +14,71 @@
         #preview-image { max-width: 100%; max-height: 300px; margin-top: 10px; display: none; }
         button { background-color: var(--mon-red); color: white; border: none; padding: 15px 25px; font-size: 18px; cursor: pointer; border-radius: 6px; width: 100%; font-weight: bold; }
         button:disabled { background-color: #aaa; cursor: not-allowed; }
-        #output-text { width: 100%; height: 250px; margin-top: 20px; padding: 15px; font-size: 18px; border: 1px solid #ddd; border-radius: 8px; line-height: 1.6; font-family: "Pyidaungsu", "Mon3", serif; }
-        .status { font-weight: bold; color: #555; margin: 15px 0; text-align: center; font-size: 16px; }
+        #output-text { width: 100%; height: 300px; margin-top: 20px; padding: 15px; font-size: 18px; border: 1px solid #ddd; border-radius: 8px; line-height: 1.6; font-family: "Pyidaungsu", "Mon3", serif; }
+        .status { font-weight: bold; color: #555; margin: 15px 0; text-align: center; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🔎 Mon OCR Scanner</h2>
-    
+    <h2>🔎 Mon OCR Scanner (Smart Fix)</h2>
     <div class="upload-box">
         <input type="file" id="uploader" accept="image/*" onchange="previewImage()">
         <br>
         <img id="preview-image" alt="Image Preview">
     </div>
-
     <button id="scan-btn" onclick="performOCR()">Scan လိက် (Start)</button>
-    
     <p id="status" class="status">ဍဵုခလုတ် "Scan လိက်" သွက်ဂွံစ...</p>
     <textarea id="output-text" placeholder="လိက်မန် တိတ်ကၠုင်ဒၞာဲဏအ်ရ..."></textarea>
 </div>
 
 <script>
-    // ၁. Function ပလေဝ်လိက် (Auto-Correction)
+    // ၁. Function ပလေဝ်လိက် နကဵု "အဘိဓာန်မန်" (Advanced Logic)
     function fixMonScript(text) {
         if (!text) return "";
-        return text
-            .replace(/င/g, "ၚ")  // Mon Nga
-            .replace(/ၺ/g, "ည")  // Mon Nya
-            .replace(/ၡ/g, "ၝ")  // Mon Mbba
-            .replace(/ၢ/g, "ၟ")   // Mon Hma
-            .replace(/ွ/g, "ၞ")   // Mon Na
-            .replace(/[0-9@#$%^&*<>]/g, " ") 
-            .trim();
+
+        // Step A: ပလေဝ် အက္ခရ်သဇိုင် (Character Level)
+        let fixed = text
+            .replace(/င/g, "ၚ")  // Nga
+            .replace(/ၺ/g, "ည")  // Nya
+            .replace(/ၡ/g, "ၝ")  // Mbba
+            .replace(/ၢ/g, "ၟ")   // Hma
+            .replace(/ွ/g, "ၞ")   // Na subscript
+            .replace(/ဴ/g, "ဵ")   // Vowel shift fix
+            .replace(/ဂ်/g, "ဂှ်") // Common ending correction
+            .replace(/််/g, "်")   // Double virama fix
+            .replace(/\|/g, "၊")  // Pipe to Punctuation
+            .replace(/I/g, "၊")
+            .replace(/ll/g, "။");
+
+        // Step B: ပလေဝ် မအရေဝ် (Word Level - Dictionary)
+        // ဍေံဗှ်ဒး "ကို" -> ပြံင်ကဵု "ကဵု"
+        const commonMistakes = [
+            { wrong: "ကို", right: "ကဵု" },
+            { wrong: "နက", right: "နကဵု" },
+            { wrong: "တုဟ်", right: "တွဟ်" },
+            { wrong: "တု", right: "တုဲ" },
+            { wrong: "ဗွဝ်ကံ့", right: "ဗွဝ်ကၠံ" },
+            { wrong: "ဒါရဝတီ", right: "ဒွါရဝတီ" },
+            { wrong: "အရေရ်", right: "အရေဝ်" },
+            { wrong: "လဒေါၚ်", right: "လဒေါဝ်" },
+            { wrong: "မၞ္ဝ", right: "မၞုံ" },
+            { wrong: "စၞတ်", right: "စွံ" },
+            { wrong: "ဂၞံ", right: "ဂွံ" },
+            { wrong: "သခို", right: "သ္ကိုပ်" }
+        ];
+
+        commonMistakes.forEach(item => {
+            // Replace whole words (Global search)
+            let regex = new RegExp(item.wrong, "g");
+            fixed = fixed.replace(regex, item.right);
+        });
+
+        // Step C: သ္အးပလီုထောံ လိက်အု (Remove Garbage/Noise)
+        // ပလီုထောံ [ ] _ ၈ ၃ ဏာ တအ် ယဝ်ရဍေံကၠုင်မွဲမဓဝ်
+        fixed = fixed.replace(/[_\[\]@#$%^&*<>]/g, ""); 
+        
+        return fixed.trim();
     }
 
     function previewImage() {
@@ -67,30 +99,24 @@
 
         if (!file) { alert("ရွေးကေတ် ဗီုရုပ်မွဲမွဲညိ"); return; }
 
-        // Disable button to prevent double click
         btn.disabled = true;
-        btn.innerText = "မင်မွဲချိုန်ခဏ...";
-        status.innerText = "⏳ စက်မံင် Download Data (mya)...";
+        status.innerText = "⏳ ဗှ်မံင်လိက်... (Processing)...";
         output.value = "";
         
         try {
-            // စကာ Tesseract.recognize (နဲကဲလောဲအိုတ်)
-            // 'mya' = Myanmar Language (Stable)
             const { data: { text } } = await Tesseract.recognize(
                 file,
                 'mya', 
                 {
                     logger: m => {
                         if(m.status === 'recognizing text') {
-                            status.innerText = `⏳ ဗှ်မံင်လိက်: ${Math.round(m.progress * 100)}%`;
-                        } else {
-                            status.innerText = "⏳ " + m.status;
+                            status.innerText = `⏳ ဗှ်မံင်: ${Math.round(m.progress * 100)}%`;
                         }
                     }
                 }
             );
             
-            // ပလေဝ်လိက်
+            // ကော် Function ပလေဝ်လိက်
             const correctedText = fixMonScript(text);
             
             output.value = correctedText;
@@ -99,10 +125,8 @@
         } catch (err) {
             console.error(err);
             status.innerText = "❌ Error: " + err.message;
-            alert("ဗၠေတ်မံင်ညိ! Internet connection ခိုဟ်ဟာ စၟဳစၟတ်ညိ။");
         } finally {
             btn.disabled = false;
-            btn.innerText = "Scan လိက် (Start)";
         }
     }
 </script>
