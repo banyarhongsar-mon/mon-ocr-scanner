@@ -40,73 +40,59 @@
     <textarea id="output-text" placeholder="လိက်မန် သ္အးသ္အးဇ္ၚးဇ္ၚး တိတ်ကၠုင်ဒၞာဲဏအ်ရ..."></textarea>
     <button id="copy-btn" onclick="copyToClipboard()">📋 ကူကေတ်လိက် (Copy Text)</button>
 </div>
-
 <script>
     function cleanMonText(text) {
         if (!text) return "";
+        let fixed = text;
 
-        // ၁. အဘိဓာန်ပလေဝ်လိက် (Updated Dictionary)
-        const dictionary = [
-            // --- User Requested Fixes (အတိုင်မၞးကဵုလဝ်) ---
+        // --- ၁. Smart Dictionary (ပလေဝ်ဝေါဟာရ မၞးမကဵုလဝ်) ---
+        const replacements = [
             { w: "ကို", r: "ကဵု" },
-            { w: "ပ္ကဲ့", r: "ပ္ဍဲ" }, { w: "ပ္ကဲ", r: "ပ္ဍဲ" },
-            { w: "သွဝ်ကျာ", r: "သၟဝ်ကျာ" },
+            { w: "ပ္ကဲ့", r: "ပ္ဍဲ" }, { w: "ပ္ကဲ", r: "ပ္ဍဲ" }, { w: "ပ္လဲ", r: "ပ္ဍဲ" },
+            { w: "သွဝ်ကျာ", r: "သၟဝ်ကျာ" }, { w: "သၞဝ်ကျာ", r: "သၟဝ်ကျာ" },
             { w: "ပှန်", r: "ပၠန်" },
             { w: "မသ်္သေ့ဒံၚ်", r: "မသှ်ေသၟေဟ်ဒၟံၚ်" }, { w: "မသ်္သေ့", r: "မသှ်ေသၟေဟ်" },
             { w: "စီ", r: "ၜဳ" },
-            { w: "တွဟ်", r: "တၞဟ်" }, // တွဟ် -> တၞဟ်
+            { w: "တွဟ်", r: "တၞဟ်" }, 
             { w: "တွေၚ်", r: "တၟေၚ်" },
-
-            // --- Previous Fixes (လိက်ဓရ် & ပါဠိ) ---
-            { w: "သာဓှ", r: "သာဓု" }, { w: "သ်ာၚွံ", r: "သာ်ဝွံ" },
-            { w: "ကုသီ့", r: "ကုသဵု" }, { w: "ကုသီ", r: "ကုသဵု" },
-            { w: "ကျာ်တွဟွံ", r: "ကျာ်တွံဟွံ" }, { w: "ဂွံကို", r: "ဂွံကဵု" }, 
-            { w: "ဗှးအ", r: "ဗၠးအ" }, { w: "ဟောံ ဒါန်", r: "ဟောံ ဒါန်" },
-            { w: "လံသေဲ", r: "လဴသေဲ" }, { w: "မ္ညုၚ်", r: "ပ္ညုင်" }, { w: "ဂွီ", r: "ဂွဳ" },
-            { w: "တဲ့", r: "တ္ၚဲ" }, { w: "တဲ်", r: "တ္ၚဲ" }, { w: "ပိိုတ်", r: "ပၠိုတ်" },
-            { w: "ဂှံၚ်", r: "ဂၠံင်" }, { w: "ဒ်ဘုတ်", r: "ဒှ်ပြိုတ်" },
-            { w: "ဗှာဲ", r: "ဗၠာဲ" }, { w: "ဗှာ", r: "ဗၠာဲ" },
-            { w: "တြံ", r: "တြဴ" }, { w: "ကြံတုဲ", r: "ကြဴတုဲ" }, { w: "တ္ဒုၚ်", r: "တၠုင်" },
-            { w: "နုၚ်က္ကဓိ", r: "နုင်ဣဓိ" }, { w: "ကုသိုန္ၚံ", r: "ကုသဵုနွံ" },
-            { w: "ကှေံ့", r: "ကၠေံ" }, { w: "ချီတာ", r: "ချဳတာ" }, 
-            { w: "သွိုၚ်", r: "သၞိင်" }, { w: "သဓုံ", r: "သဓုံ" }, { w: "ဗြို", r: "ဗြီု" },
-            { w: "သွိက်", r: "သၟိက်" }, { w: "သွိၚ်", r: "သၟိင်" }, 
-            { w: "သကဵုန်", r: "သကိုန်" }, { w: "ဟဒိုန်", r: "ဟဒိုန်" },
-            
-            // Common Errors
-            { w: "ၚ်", r: "င်" }, { w: "ဒ်ှ", r: "ဒှ်" }, { w: "ဂ်ှ", r: "ဂှ်" }
+            { w: "နဒါန်", r: "နိဒါန်" },
+            { w: "ကောနိ", r: "ကောန်" }, { w: "မနိ", r: "မန်" },
+            { w: "ဉံလေဝ်", r: "နွံလေဝ်" }, { w: "ဉံ", r: "နွံ" },
+            { w: "ယာဲက္လတ", r: "မိမယာဲကလ" },
+            { w: "သာသ္ပံ", r: "သာသ္ပ" },
+            { w: "၄ၚ်", r: "နူ" },
+            { w: "မၚိှံၟ", r: "မင်မိ" },
+            { w: "ချန်ပုၚ်", r: "ချက်ပုင်" }
         ];
 
-        let fixed = text;
-        dictionary.forEach(item => {
+        replacements.forEach(item => {
             let regex = new RegExp(item.w, "g");
             fixed = fixed.replace(regex, item.r);
         });
 
-        // ၂. Standard Mon Character Fixes
+        // --- ၂. Logic Fixes (Smart Patterns) ---
         fixed = fixed
+            .replace(/([က-အ])နိ(?=[^က-အ]|\s)/g, "$1န်") // ကောနိ -> ကောန်
             .replace(/င/g, "ၚ").replace(/ၺ/g, "ည").replace(/ၡ/g, "ၝ").replace(/ၢ/g, "ၟ")
-            .replace(/ဂ်/g, "ဂှ်").replace(/့/g, "်").replace(/ဲံ/g, "ဲ")
-            .replace(/ဴ/g, "ဵ").replace(/ို/g, "ို");
+            .replace(/ဂ်/g, "ဂှ်").replace(/့/g, "်")
+            .replace(/ၟၟ/g, "ၟ")
+            .replace(/္ဘ/g, "္တ");
 
-        // ၃. Garbage Filter (ပလီုလိက်အု)
+        // --- ၃. Noise Filter (ပလီုလိက်အု) ---
         const lines = fixed.split('\n');
         const cleanLines = lines.filter(line => {
             let s = line.trim();
             if (s.length === 0) return false;
-            
-            // Remove lines with mainly numbers/garbage symbols
             let validMonChars = (s.match(/[က-အ]/g) || []).length;
             if (validMonChars < 2 && !s.includes("သာဓု")) return false; 
-
-            // Remove specific garbage lines
-            if (s.includes("ကာကာ") || s.includes("စူ တကာ")) return false;
-            if (s.match(/^[၀-၉\s.၊]+$/)) return false; 
-
             return true;
         });
 
         return cleanLines.join('\n');
+    }
+    
+</script>
+
     }
 
     function previewImage() {
