@@ -3,34 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mon OCR Scanner (Full History Fix)</title>
+    <title>Mon OCR Scanner (Ultimate Master)</title>
     <script src='https://unpkg.com/tesseract.js@4.0.2/dist/tesseract.min.js'></script>
     <style>
-        :root { --mon-red: #b71c1c; --mon-gold: #ffd700; }
-        body { font-family: "Pyidaungsu", "Mon3", sans-serif; background-color: #f5f5f5; padding: 20px; display: flex; justify-content: center; }
+        :root { --mon-red: #b71c1c; --mon-gold: #ffc107; }
+        body { font-family: "Pyidaungsu", "Mon3", sans-serif; background-color: #f4f6f8; padding: 20px; display: flex; justify-content: center; }
         .container { background: white; max-width: 900px; width: 100%; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-top: 8px solid var(--mon-red); }
-        h2 { color: var(--mon-red); text-align: center; margin-bottom: 20px; }
-        .upload-section { border: 2px dashed #ccc; padding: 20px; text-align: center; border-radius: 8px; margin-bottom: 20px; background: #fff; cursor: pointer; }
-        #preview-image { max-width: 100%; max-height: 300px; margin-top: 10px; display: none; }
-        button { width: 100%; padding: 15px; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-bottom: 10px; transition: 0.3s; }
+        h2 { color: var(--mon-red); text-align: center; margin-bottom: 20px; font-weight: bold; }
+        
+        .upload-section { border: 2px dashed #cfd8dc; padding: 25px; text-align: center; border-radius: 8px; margin-bottom: 20px; background: #fafafa; cursor: pointer; transition: 0.2s; }
+        .upload-section:hover { background-color: #eee; border-color: var(--mon-red); }
+        #preview-image { max-width: 100%; max-height: 300px; margin-top: 15px; display: none; border-radius: 8px; }
+        
+        button { width: 100%; padding: 15px; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-bottom: 12px; transition: 0.3s; }
         #scan-btn { background-color: var(--mon-red); color: white; }
-        #copy-btn { background-color: #28a745; color: white; display: none; }
-        #output-text { width: 100%; height: 550px; padding: 20px; font-size: 18px; border: 1px solid #ddd; border-radius: 8px; line-height: 2; font-family: "Pyidaungsu", "Mon3", serif; white-space: pre-wrap; }
+        #scan-btn:hover { background-color: #8e1616; }
+        #copy-btn { background-color: #2e7d32; color: white; display: none; }
+        #copy-btn:hover { background-color: #1b5e20; }
+        
+        #output-text { width: 100%; height: 600px; padding: 20px; font-size: 18px; border: 1px solid #ddd; border-radius: 8px; line-height: 2; font-family: "Pyidaungsu", "Mon3", serif; white-space: pre-wrap; background-color: #fff; }
         .status { text-align: center; color: #555; font-weight: bold; margin: 10px 0; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🔎 Mon History OCR (Final Fix)</h2>
+    <h2>🔎 Mon OCR Scanner (Master Fix)</h2>
     
     <div class="upload-section" onclick="document.getElementById('uploader').click()">
         <input type="file" id="uploader" accept="image/*" onchange="previewImage()" style="display:none">
-        <p>📂 ဍဵုဒၞာဲဏအ် သွက်ဂွံရွေးဗီုရုပ် (Click to Upload)</p>
+        <p>📂 ဍဵုဒၞာဲဏအ် သွက်ဂွံရုဲဗီုရုပ် (Click to Upload)</p>
         <img id="preview-image" alt="Preview">
     </div>
 
-    <button id="scan-btn" onclick="performOCR()">စ Scan လိက် (Start Fixing)</button>
+    <button id="scan-btn" onclick="performOCR()">Scan & Fix (100% Clean)</button>
     <p id="status" class="status">မင်မံင်ဗီုရုပ်...</p>
     <textarea id="output-text" placeholder="လိက်မန် သ္အးသ္အးဇ္ၚးဇ္ၚး တိတ်ကၠုင်ဒၞာဲဏအ်ရ..."></textarea>
     <button id="copy-btn" onclick="copyToClipboard()">📋 ကူကေတ်လိက် (Copy Text)</button>
@@ -41,67 +47,56 @@
         if (!text) return "";
         let fixed = text;
 
-        // --- ၁. Advanced Dictionary (Looking at your specific OCR errors) ---
+        // ၁. Master Dictionary (ပကောံလဝ် လိက်ဓရ်၊ လောကနဳတိ၊ လိက်ဝင်)
         const dictionary = [
-            // အက္ခရ်ဆင့် ကေုာံ မအက္ခရ် ဗၠေတ်တွဵု
-            { w: "တဲ်", r: "တ္ၚဲ" }, { w: "ဇှှော်", r: "ဇၞော်" }, { w: "သၠာ", r: "သၞာံ" },
-            { w: "အခၚ", r: "အခိင်" }, { w: "ဟု", r: "ဟီု" }, { w: "တ္မအ", r: "တၟအ်" },
+            // --- General Fixes (ဝေါဟာရ အဓိက) ---
+            { w: "ကို", r: "ကဵု" },
+            { w: "ပ္ကဲ့", r: "ပ္ဍဲ" }, { w: "ပ္ကဲ", r: "ပ္ဍဲ" }, { w: "ပ္လဲ", r: "ပ္ဍဲ" }, { w: "ပ္ထဲ", r: "ပ္ဍဲ" },
+            { w: "သွဝ်ကျာ", r: "သၟဝ်ကျာ" }, { w: "သၞဝ်ကျာ", r: "သၟဝ်ကျာ" }, { w: "သၞဝ်", r: "သၟဝ်" },
+            { w: "ပှန်", r: "ပၠန်" }, { w: "ပၠနိ", r: "ပၠန်" },
+            { w: "မသ်္သေ့ဒံၚ်", r: "မသှ်ေသၟေဟ်ဒၟံၚ်" }, { w: "မသ်္သေ့", r: "မသှ်ေသၟေဟ်" },
+            { w: "သၞေဟ်ဒၞံၚ်", r: "သၟေဟ်ဒၟံင်" }, { w: "သ်ေေ", r: "သှ်ေ" },
+            { w: "စီ", r: "ၜဳ" },
+            { w: "တွဟ်", r: "တၞဟ်" }, { w: "ဆတသမု", r: "တၞဟ်" },
+            { w: "တွေၚ်", r: "တၟေၚ်" }, { w: "တဲ်", r: "တ္ၚဲ" },
+            { w: "ဇှှော်", r: "ဇၞော်" }, { w: "ဇွော်", r: "ဇၞော်" },
+            { w: "သၠာ", r: "သၞာံ" }, { w: "အခၚ", r: "အခိင်" }, { w: "ဟု", r: "ဟီု" },
+            { w: "တ္မအ", r: "တၟအ်" }, { w: "တုံ", r: "တုဲ" }, { w: "တဲဲ", r: "တုဲ" },
+            { w: "ချၚ်", r: "ဍုင်" }, { w: "ဗၞာ", r: "ဗၟာ" }, { w: "ဗ္ဗာ", r: "ဗၟာ" },
+            { w: "လံ", r: "လဴ" }, { w: "လေ", r: "လဴ" },
+
+            // --- History & Dvaravati Terms (လိက်ဝင်) ---
             { w: "ဗၞဝ်ကၠ", r: "ဗွဝ်ကၠံ" }, { w: "ဗၞဝ်ကၠံ", r: "ဗွဝ်ကၠံ" },
             { w: "ဒၞါရ၀", r: "ဒွါရဝတဳ" }, { w: "ဒၞါရဝတီ", r: "ဒွါရဝတဳ" },
-            { w: "ချၚ်", r: "ဍုင်" }, { w: "ဗၞာ", r: "ဗၟာ" }, { w: "ဗ္ဗာ", r: "ဗၟာ" },
-            { w: "ဆတသမု", r: "တၞဟ်" }, { w: "တဲှာ", r: "တၟာ" },
             { w: "သၞိုၚ်", r: "သၟိင်" }, { w: "သေထာ", r: "သေံထာဲ" },
-            { w: "ဒၞာချၚဗၟာ", r: "ဒၞာဲဍုင်ဗၟာ" }, { w: "သၞဝ်", r: "သၟဝ်" },
-            { w: "နဒဒှ်", r: "နဒဒှ်" }, { w: "မၞဲ", r: "မွဲ" },
-            { w: "ပ္ကဲ့", r: "ပ္ဍဲ" }, { w: "ပ္ထဲ", r: "ပ္ဍဲ" }, { w: "ပၞ္ထဲ", r: "ပ္ဍဲ" },
-            { w: "ရေၚ်သကအ်", r: "ရေင်သကအ်" }, { w: "တုံ", r: "တုဲ" },
-            { w: "ကို", r: "ကဵု" }, { w: "လံ", r: "လဴ" }, { w: "လေ", r: "လဴ" },
+            { w: "ဒၞာချၚဗၟာ", r: "ဒၞာဲဍုင်ဗၟာ" }, { w: "နဒဒှ်", r: "နဒဒှ်" },
+            { w: "မၞဲ", r: "မွဲ" }, { w: "ရေၚ်သကအ်", r: "ရေင်သကအ်" },
             { w: "ဟုပ္ပ", r: "ဟီုဂွံ" }, { w: "ဂၞံရ", r: "ဂွံရ" },
-            { w: "သၞေဟ်ဒၞံၚ်", r: "သၟေဟ်ဒၟံင်" }, { w: "သ်ေေ", r: "သှ်ေ" },
-             { w: "ကို", r: "ကဵု" },
-            { w: "ပ္ကဲ့", r: "ပ္ဍဲ" }, { w: "ပ္ကဲ", r: "ပ္ဍဲ" }, { w: "ပ္လဲ", r: "ပ္ဍဲ" },
-            { w: "သွဝ်ကျာ", r: "သၟဝ်ကျာ" }, { w: "သၞဝ်ကျာ", r: "သၟဝ်ကျာ" },
-            { w: "ပှန်", r: "ပၠန်" },
-            { w: "မသ်္သေ့ဒံၚ်", r: "မသှ်ေသၟေဟ်ဒၟံၚ်" }, { w: "မသ်္သေ့", r: "မသှ်ေသၟေဟ်" },
-            { w: "စီ", r: "ၜဳ" },
-            { w: "တွဟ်", r: "တၞဟ်" }, 
-            { w: "တွေၚ်", r: "တၟေၚ်" },
-            { w: "နဒါန်", r: "နိဒါန်" },
-            { w: "ကောနိ", r: "ကောန်" }, { w: "မနိ", r: "မန်" },
-            { w: "ဉံလေဝ်", r: "နွံလေဝ်" }, { w: "ဉံ", r: "နွံ" },
-            { w: "ယာဲက္လတ", r: "မိမယာဲကလ" },
-            { w: "သာသ္ပံ", r: "သာသ္ပ" },
-            { w: "၄ၚ်", r: "နူ" },
-            { w: "မၚိှံၟ", r: "မင်မိ" },
-            { w: "ချန်ပုၚ်", r: "ချက်ပုင်" }
+
+            // --- Loka Niti Terms (လောကနဳတိ) ---
             { w: "နဒါန်", r: "နိဒါန်" }, { w: "ကောနိ", r: "ကောန်" }, { w: "မနိ", r: "မန်" },
-            { w: "ဉံလေဝ်", r: "နွံလေဝ်" }, { w: "ဉံ", r: "နွံ" }, { w: "ခွဲမွဲသ်ို", r: "ခိုဟ်မွဲသီု" },
-            { w: "ဒတာလျိုၚ်", r: "ဒတာလျိုင်" }, { w: "ယာဲက္လတ", r: "ယာဲကလ" },
+            { w: "ဉံလေဝ်", r: "နွံလေဝ်" }, { w: "ဉံ", r: "နွံ" }, { w: "နွံတၱ", r: "နွံတဴ" },
+            { w: "ခွဲမွဲသ်ို", r: "ခိုဟ်မွဲသီု" }, { w: "ဒတာလျိုၚ်", r: "ဒတာလျိုင်" },
+            { w: "ယာဲက္လတ", r: "မိမယာဲကလ" }, { w: "မၚိှံၟ", r: "မင်မိ" },
             { w: "လှ္ဂို", r: "လ္ၚဵု" }, { w: "သာသ္ပံ", r: "သာသ္ပ" }, { w: "၄ၚ်", r: "နူ" },
             { w: "ပ္ဒဲ", r: "ပ္ဍဲ" }, { w: "ဒှိအာ", r: "ဒှ်အာ" }, { w: "သွးသွး", r: "သၟးသၟး" },
-            { w: "ဇွော်", r: "ဇၞော်" }, { w: "ရႈ", r: "ရ။" }, { w: "ရၤ", r: "ရ။" },
             { w: "မွိုဟ်", r: "မၞိဟ်" }, { w: "ဂလာနိ", r: "ဂလာန်" }, { w: "အပြောံ", r: "အပြောံ" },
-            { w: "မၚိှံၟ", r: "မင်မိ" }, { w: "ချန်ပုၚ်", r: "ချက်ပုင်" },
-            { w: "တဲဲ", r: "တုဲ" }, { w: "ဟောံဗြံ", r: "ဟောံဗြမ်" }, { w: "ပၠနိ", r: "ပၠန်" },
+            { w: "ချန်ပုၚ်", r: "ချက်ပုင်" }, { w: "ဟောံဗြံ", r: "ဟောံဗြမ်" },
             { w: "ဗ္ဘောနိ", r: "ဗ္တောန်" }, { w: "ဗ္တောနိ", r: "ဗ္တောန်" },
-
-            // Loka Niti Terms
-            { w: "အွာလောကနိတိ", r: "အ္စာလောကနဳတိ" }, { w: "လ္ဒတ်", r: "လ္ၚတ်" },
+            { w: "အွာလောကနိတိ", r: "အ္စာလောကနဳတိ" }, { w: "အ္စွာ", r: "အ္စာ" },
+            { w: "လ္ဒတ်", r: "လ္ၚတ်" }, { w: "လူှတ်ၟ", r: "လ္ၚတ်" }, { w: "မ္ဗတ်", r: "မ္ၚတ်" },
             { w: "ပ္ဘႆ", r: "မုဟီု" }, { w: "သိပ္ပံ", r: "သိပ္ပံ" },
-            { w: "ဒုတိယရေဒံ", r: "ဒုတိယအဝဲ" }, { w: "ၚံဓဝ်", r: "ဓဝ်" }, { w: "လူှတ်ၟ", r: "လ္ၚတ်" },
-            { w: "မာနိ", r: "မာန်" }, { w: "စိုၚ်", r: "စိုပ်" }, { w: "ဘဝယ်", r: "အဝယ်" },
-            { w: "လောနိ", r: "လောန်" }, { w: "မ္ဗတ်", r: "မ္ၚတ်" }, { w: "ကှောနိ", r: "ကၠောန်" },
-            { w: "ဌိုတ်", r: "ဟိုတ်" }, { w: "ဓၚ်", r: "ဓဝ်" },
+            { w: "ဒုတိယရေဒံ", r: "ဒုတိယအဝဲ" }, { w: "ၚံဓဝ်", r: "ဓဝ်" }, { w: "ဓၚ်", r: "ဓဝ်" },
+            { w: "မာနိ", r: "မာန်" }, { w: "စိုၚ်", r: "စိုပ်" }, { w: "စိုဝ်", r: "စိုပ်" },
+            { w: "ဘဝယ်", r: "အဝယ်" }, { w: "လောနိ", r: "လောန်" },
+            { w: "ကှောနိ", r: "ကၠောန်" }, { w: "ဌိုတ်", r: "ဟိုတ်" },
             { w: "ဆဝ်ဗ္ဂုဟ်", r: "ဆဝ်မ္ၚုဟ်" }, { w: "ပ္တိုက်ဖအောၚ်", r: "ပ္တိုက်ဖအောဝ်" },
-            { w: "ကောနိၚ္ဂာ်", r: "ကောန်ၚာ်" }, { w: "နွံတၱ", r: "နွံတဴ" },
-            { w: "အ္စွာ", r: "အ္စာ" }, { w: "ဒုၚိ", r: "ဒုင်" }, { w: "ခောတ်", r: "ခေတ်" },
-            { w: "စိုဝ်", r: "စိုပ်" },
-            { w: "အလက်", r: "အလန်" }
+            { w: "ကောနိၚ္ဂာ်", r: "ကောန်ၚာ်" }, { w: "ဒုၚိ", r: "ဒုင်" }, { w: "ခောတ်", r: "ခေတ်" },
+            { w: "အလက်", r: "အလန်" },
 
-
-            // Fix Punctuation Noise
-            { w: "ရႈ", r: "ရ။" }, { w: "ရၟ", r: "ရ။" }, { w: "ရ11", r: "ရ။" },
-            { w: "ရ1", r: "ရ။" }, { w: "ရ#", r: "ရ။" }
+            // Fix Punctuation Noise (ပလီုလိက်အု)
+            { w: "ရႈ", r: "ရ။" }, { w: "ရၟ", r: "ရ။" }, { w: "ရၤ", r: "ရ။" },
+            { w: "ရ11", r: "ရ။" }, { w: "ရ1", r: "ရ။" }, { w: "ရ#", r: "ရ။" }
         ];
 
         dictionary.forEach(item => {
@@ -109,12 +104,15 @@
             fixed = fixed.replace(regex, item.r);
         });
 
-        // ၂. Standard Character Cleanup
+        // ၂. Standard Character Cleanup (ပလေဝ်သဒ္ဒါသဇိုင်)
         fixed = fixed
-            .replace(/င/g, "ၚ").replace(/ၺ/g, "ည").replace(/ၡ/g, "ၝ")
-            .replace(/ၢ/g, "ၟ").replace(/ွ/g, "ၞ")
-            .replace(/ဂ်/g, "ဂှ်").replace(/့/g, "်")
-            .replace(/ဴ/g, "ဵ").replace(/ို/g, "ို");
+            .replace(/([က-အ])နိ(?=[^က-အ]|\s)/g, "$1န်") // ကောနိ -> ကောန်
+            .replace(/က္လ/g, "ကလ")
+            .replace(/င/g, "ၚ").replace(/ၺ/g, "ည").replace(/ၡ/g, "ၝ").replace(/ၢ/g, "ၟ")
+            .replace(/ွ/g, "ၞ")
+            .replace(/ဂ်/g, "ဂှ်").replace(/့/g, "်").replace(/ဲံ/g, "ဲ")
+            .replace(/ဴ/g, "ဵ").replace(/ို/g, "ို")
+            .replace(/္ဘ/g, "္တ").replace(/ၟၟ/g, "ၟ");
 
         // ၃. Noise Filter (ပလီုလိက်အကြုက်)
         const lines = fixed.split('\n');
@@ -137,7 +135,7 @@
         if (file) {
             preview.style.display = 'block';
             preview.src = URL.createObjectURL(file);
-            document.getElementById('status').innerText = "ဗီုရုပ်အောပ်လုပ်တုဲရ၊ ဍဵု Start ညိ";
+            document.getElementById('status').innerText = "ဗီုရုပ်အောပ်လုပ်တုဲရ၊ ဍဵု Scan ညိ";
         }
     }
 
@@ -169,7 +167,7 @@
             });
             
             output.value = fixMonScript(text);
-            status.innerText = "✅ Scan တုဲဒှ်ရ! (Pattern Fix Applied)";
+            status.innerText = "✅ Scan တုဲဒှ်ရ! (Master Fix)";
             copyBtn.style.display = "block";
         } catch (err) {
             status.innerText = "❌ Error: " + err.message;
