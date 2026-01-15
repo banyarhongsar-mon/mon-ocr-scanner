@@ -3,96 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mon OCR Scanner (Final Fix)</title>
+    <title>Mon OCR Scanner (Ultimate Smooth Version)</title>
     <script src='https://unpkg.com/tesseract.js@4.0.2/dist/tesseract.min.js'></script>
     <style>
-        :root { --mon-red: #b71c1c; --mon-gold: #ffd700; }
-        body { font-family: "Pyidaungsu", "Mon3", sans-serif; background-color: #f5f5f5; padding: 20px; display: flex; justify-content: center; }
-        .container { background: white; max-width: 900px; width: 100%; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border-top: 8px solid var(--mon-red); }
-        h2 { color: var(--mon-red); text-align: center; margin-bottom: 20px; }
-        
-        .upload-section { border: 2px dashed #ccc; padding: 20px; text-align: center; border-radius: 8px; margin-bottom: 20px; background: #fff; cursor: pointer; }
-        #preview-image { max-width: 100%; max-height: 300px; margin-top: 10px; display: none; }
-        
-        button { width: 100%; padding: 15px; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-bottom: 10px; transition: 0.3s; }
+        :root { --mon-red: #d32f2f; --mon-gold: #ffc107; }
+        body { font-family: "Pyidaungsu", "Mon3", sans-serif; background-color: #f8f9fa; padding: 20px; display: flex; justify-content: center; }
+        .container { background: white; max-width: 900px; width: 100%; padding: 25px; border-radius: 15px; box-shadow: 0 5px 25px rgba(0,0,0,0.1); border-top: 10px solid var(--mon-red); }
+        h2 { color: var(--mon-red); text-align: center; margin-bottom: 15px; }
+        .upload-box { border: 2px dashed #cfd8dc; padding: 20px; text-align: center; border-radius: 10px; background: #fff; cursor: pointer; transition: 0.3s; }
+        .upload-box:hover { border-color: var(--mon-red); background-color: #fafafa; }
+        #preview-image { max-width: 100%; max-height: 350px; margin-top: 15px; display: none; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        button { border: none; padding: 15px; font-size: 18px; cursor: pointer; border-radius: 8px; width: 100%; font-weight: bold; margin-bottom: 12px; transition: 0.3s; }
         #scan-btn { background-color: var(--mon-red); color: white; }
-        #copy-btn { background-color: #28a745; color: white; display: none; }
-        
-        #output-text { width: 100%; height: 500px; padding: 20px; font-size: 18px; border: 1px solid #ddd; border-radius: 8px; line-height: 2; font-family: "Pyidaungsu", "Mon3", serif; white-space: pre-wrap; }
-        .status { text-align: center; color: #555; font-weight: bold; margin: 10px 0; }
+        #copy-btn { background-color: #2e7d32; color: white; display: none; }
+        #output-text { width: 100%; height: 500px; padding: 20px; font-size: 19px; border: 1px solid #ddd; border-radius: 10px; line-height: 2.2; font-family: "Pyidaungsu", "Mon3", serif; white-space: pre-wrap; background-color: #fff; box-sizing: border-box; }
+        .status { text-align: center; color: #546e7a; font-weight: bold; margin: 15px 0; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2> Mon OCR (Final Fix)
-        By Banyarhongsar (ဗညာဟံသာ)
-    </h2>
+    <h2>🔎 Mon OCR (Final Accurate Fix)</h2>
     
-    <div class="upload-section" onclick="document.getElementById('uploader').click()">
+    <div class="upload-box" onclick="document.getElementById('uploader').click()">
         <input type="file" id="uploader" accept="image/*" onchange="previewImage()" style="display:none">
-        <p>📂 ဍဵုဒၞာဲဏအ် သွက်ဂွံရွေးဗီုရုပ် (Click to Upload)</p>
+        <p>📷 ဍဵုဒၞာဲဏအ် သွက်ဂွံရုဲဗီုရုပ် (Click to Upload)</p>
         <img id="preview-image" alt="Preview">
     </div>
 
-    <button id="scan-btn" onclick="performOCR()">စ Scan လိက် (Start)</button>
+    <button id="scan-btn" onclick="performOCR()">စ Scan လိက် (Start OCR)</button>
     <p id="status" class="status">မင်မံင်ဗီုရုပ်...</p>
-    <textarea id="output-text" placeholder="လိက်မန် သ္အးသ္အးဇ္ၚးဇ္ၚး တိတ်ကၠုင်ဒၞာဲဏအ်ရ..."></textarea>
+    
+    <textarea id="output-text" placeholder="လိက်မန် မဗှ်ဂွံတအ် တိတ်ကၠုင်ဒၞာဲဏအ်ရ..."></textarea>
+    
     <button id="copy-btn" onclick="copyToClipboard()">📋 ကူကေတ်လိက် (Copy Text)</button>
 </div>
+
+<canvas id="processCanvas" style="display:none;"></canvas>
+
 <script>
-    function cleanMonText(text) {
+    // ၁. Smart Dictionary (ပလေဝ်ဝေါဟာရ အတိုင်လိက်ပရူ ဒွါရဝတီ မၞးမကဵုလဝ်)
+    function fixMonScript(text) {
         if (!text) return "";
         let fixed = text;
 
-        // --- ၁. Smart Dictionary (ပလေဝ်ဝေါဟာရ မၞးမကဵုလဝ်) ---
-        const replacements = [
-            { w: "ကို", r: "ကဵု" },
-            { w: "ပ္ကဲ့", r: "ပ္ဍဲ" }, { w: "ပ္ကဲ", r: "ပ္ဍဲ" }, { w: "ပ္လဲ", r: "ပ္ဍဲ" },
-            { w: "သွဝ်ကျာ", r: "သၟဝ်ကျာ" }, { w: "သၞဝ်ကျာ", r: "သၟဝ်ကျာ" },
-            { w: "ပှန်", r: "ပၠန်" },
-            { w: "မသ်္သေ့ဒံၚ်", r: "မသှ်ေသၟေဟ်ဒၟံၚ်" }, { w: "မသ်္သေ့", r: "မသှ်ေသၟေဟ်" },
-            { w: "စီ", r: "ၜဳ" },
-            { w: "တွဟ်", r: "တၞဟ်" }, 
-            { w: "တွေၚ်", r: "တၟေၚ်" },
-            { w: "နဒါန်", r: "နိဒါန်" },
-            { w: "ကောနိ", r: "ကောန်" }, { w: "မနိ", r: "မန်" },
-            { w: "ဉံလေဝ်", r: "နွံလေဝ်" }, { w: "ဉံ", r: "နွံ" },
-            { w: "ယာဲက္လတ", r: "မိမယာဲကလ" },
-            { w: "သာသ္ပံ", r: "သာသ္ပ" },
-            { w: "၄ၚ်", r: "နူ" },
-            { w: "မၚိှံၟ", r: "မင်မိ" },
-            { w: "ချန်ပုၚ်", r: "ချက်ပုင်" }
+        const dictionary = [
+            // အက္ခရ်ဆင့် ကေုာံ ဝေါဟာရ အဓိက
+            { w: "ဗဝ်ကံ့", r: "ဗွဝ်ကၠံ" }, { w: "ဗၞဝ်ကၠံ", r: "ဗွဝ်ကၠံ" },
+            { w: "ဒါရဝတီ", r: "ဒွါရဝတီ" }, { w: "ဒၞါရဝတီ", r: "ဒွါရဝတီ" },
+            { w: "အရေရ်", r: "အရေဝ်" }, { w: "အရေၚ်", r: "အရေဝ်" },
+            { w: "ချၚ်", r: "ဍုင်" }, { w: "ဗၞာ", r: "ဗၟာ" }, { w: "ဗ္ဗာ", r: "ဗၟာ" },
+            { w: "ပ္ကဲ", r: "ပ္ဍဲ" }, { w: "ပ္လဲ", r: "ပ္ဍဲ" }, { w: "ပ္ကဲ့", r: "ပ္ဍဲ" },
+            { w: "သၞဝ်ကျာ", r: "သၟဝ်ကျာ" }, { w: "သၞဝ်", r: "သၟဝ်" },
+            { w: "လၞုဟ်", r: "လၟုဟ်" }, { w: "လွုဟ်", r: "လၟုဟ်" },
+            { w: "နၞံ", r: "နွံ" }, { w: "ဗၞဲ", r: "ဗွဲ" },
+            { w: "စိုတ်", r: "စိုပ်" }, { w: "စိုန်ရ", r: "ၜိုန်ရ" },
+            { w: "စီ", r: "ၜဳ" }, { w: "တွဟ်", r: "တၞဟ်" }, { w: "တွေၚ်", r: "တၟေၚ်" },
+            { w: "ရောၚ်", r: "ရောင်" }, { w: "ဒ်", r: "ဒှ်" }, { w: "ဒ်ှ", r: "ဒှ်" },
+            { w: "တုဲံ", r: "တုဲ" }, { w: "ကို", r: "ကဵု" }, { w: "သို", r: "သိ" },
+            { w: "ရႈ", r: "ရ။" }, { w: "ရၟ", r: "ရ။" }
         ];
 
-        replacements.forEach(item => {
+        dictionary.forEach(item => {
             let regex = new RegExp(item.w, "g");
             fixed = fixed.replace(regex, item.r);
         });
 
-        // --- ၂. Logic Fixes (Smart Patterns) ---
+        // Standard Characters
         fixed = fixed
-            .replace(/([က-အ])နိ(?=[^က-အ]|\s)/g, "$1န်") // ကောနိ -> ကောန်
-            .replace(/င/g, "ၚ").replace(/ၺ/g, "ည").replace(/ၡ/g, "ၝ").replace(/ၢ/g, "ၟ")
+            .replace(/င/g, "ၚ").replace(/ၺ/g, "ည").replace(/ၡ/g, "ၝ")
+            .replace(/ၢ/g, "ၟ").replace(/ွ/g, "ၞ")
             .replace(/ဂ်/g, "ဂှ်").replace(/့/g, "်")
-            .replace(/ၟၟ/g, "ၟ")
-            .replace(/္ဘ/g, "္တ");
+            .replace(/ျ၈/g, "").replace(/\[/g, "").replace(/\]/g, "");
 
-        // --- ၃. Noise Filter (ပလီုလိက်အု) ---
-        const lines = fixed.split('\n');
-        const cleanLines = lines.filter(line => {
-            let s = line.trim();
-            if (s.length === 0) return false;
-            let validMonChars = (s.match(/[က-အ]/g) || []).length;
-            if (validMonChars < 2 && !s.includes("သာဓု")) return false; 
-            return true;
-        });
-
-        return cleanLines.join('\n');
+        return fixed;
     }
-    
-</script>
 
+    // ၂. Image Pre-processor (သွက်ဂွံပလေဝ်ဗီုရုပ် ညံင်ဂွံဗှ်ဒးလောဲ)
+    async function processImage(imageSrc) {
+        return new Promise((resolve) => {
+            const canvas = document.getElementById('processCanvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            img.onload = () => {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+                // Grayscale & High Contrast
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imageData.data;
+                for (let i = 0; i < data.length; i += 4) {
+                    const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                    const threshold = 150; // Threshold for Black & White
+                    const val = avg > threshold ? 255 : 0;
+                    data[i] = data[i+1] = data[i+2] = val;
+                }
+                ctx.putImageData(imageData, 0, 0);
+                resolve(canvas.toDataURL());
+            };
+            img.src = imageSrc;
+        });
     }
 
     function previewImage() {
@@ -101,17 +111,8 @@
         if (file) {
             preview.style.display = 'block';
             preview.src = URL.createObjectURL(file);
-            document.getElementById('status').innerText = "ဍဵုခလုတ် 'Scan လိက်' သွက်ဂွံပလေဝ်...";
+            document.getElementById('status').innerText = "ဗီုရုပ်အောပ်လုပ်တုဲရ၊ ဍဵု Scan ညိ";
         }
-    }
-
-    function copyToClipboard() {
-        const output = document.getElementById("output-text");
-        navigator.clipboard.writeText(output.value).then(() => {
-            const btn = document.getElementById("copy-btn");
-            btn.innerText = "✅ ကူကေတ်တုဲရ!";
-            setTimeout(() => { btn.innerText = "📋 ကူကေတ်လိက် (Copy Text)"; }, 2000);
-        });
     }
 
     async function performOCR() {
@@ -121,27 +122,35 @@
         const btn = document.getElementById('scan-btn');
         const copyBtn = document.getElementById('copy-btn');
 
-        if (!file) { alert("ရွေးဗီုရုပ်မွဲမွဲညိ"); return; }
+        if (!file) { alert("ရုဲဗီုရုပ်မွဲမွဲညိ"); return; }
 
         btn.disabled = true;
-        status.innerText = "⏳ စက်မံင်ဗှ်လိက် (Scanning & Fixing)...";
-        output.value = "";
+        status.innerText = "⏳ စက်မံင်ပလေဝ်ဗီုရုပ် (Processing Image)...";
         
         try {
-            const { data: { text } } = await Tesseract.recognize(file, 'mya', {
+            // ပလေဝ်အရံင်ဗီုရုပ်ကၠာ
+            const processedSrc = await processImage(URL.createObjectURL(file));
+            
+            status.innerText = "⏳ စက်မံင်ဗှ်လိက်မန် (OCR-ing)...";
+            const { data: { text } } = await Tesseract.recognize(processedSrc, 'mya', {
                 logger: m => { if(m.status === 'recognizing text') status.innerText = `⏳ ဗှ်မံင်: ${Math.round(m.progress * 100)}%`; }
             });
             
-            const result = cleanMonText(text);
-            output.value = result;
-            
-            status.innerText = "✅ Scan တုဲဒှ်ရ! (100% Fixed)";
+            output.value = fixMonScript(text);
+            status.innerText = "✅ Scan တုဲဒှ်ရ! (Accurate Fix Applied)";
             copyBtn.style.display = "block";
         } catch (err) {
             status.innerText = "❌ Error: " + err.message;
         } finally {
             btn.disabled = false;
         }
+    }
+
+    function copyToClipboard() {
+        const output = document.getElementById("output-text");
+        navigator.clipboard.writeText(output.value).then(() => {
+            alert("ကူကေတ်တုဲရ! (Text Copied)");
+        });
     }
 </script>
 
