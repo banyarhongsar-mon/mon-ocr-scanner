@@ -3,83 +3,132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mon OCR (Debug Version)</title>
+    <title>Mon OCR Pro (Fixed)</title>
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
     <style>
-        body { font-family: "Pyidaungsu", sans-serif; padding: 20px; background: #f4f4f4; }
-        .container { max-width: 700px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; }
-        h2 { color: #b71c1c; text-align: center; }
-        textarea { width: 100%; height: 300px; padding: 10px; margin-top: 10px; font-size: 16px; }
-        #log-area { 
-            background: #000; color: #0f0; 
-            font-family: monospace; padding: 10px; 
-            height: 150px; overflow-y: scroll; 
-            margin-top: 20px; font-size: 12px;
-        }
-        button { padding: 15px; width: 100%; background: #b71c1c; color: white; border: none; font-size: 18px; cursor: pointer; margin-top: 10px; }
-        button:disabled { background: #ccc; }
+        :root { --primary: #b71c1c; --bg: #f3f4f6; }
+        body { font-family: "Pyidaungsu", "Mon3", sans-serif; background: var(--bg); padding: 20px; display: flex; justify-content: center; }
+        .container { background: white; max-width: 800px; width: 100%; padding: 25px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); border-top: 5px solid var(--primary); }
+        h2 { color: var(--primary); text-align: center; margin-bottom: 5px; }
+        .subtitle { text-align: center; color: #666; font-size: 0.9em; margin-bottom: 20px; }
+        
+        /* Upload Area */
+        .upload-box { border: 2px dashed #ddd; padding: 20px; text-align: center; border-radius: 8px; cursor: pointer; transition: 0.3s; background: #fafafa; }
+        .upload-box:hover { border-color: var(--primary); background: #fff5f5; }
+        #preview { max-width: 100%; max-height: 250px; margin-top: 10px; display: none; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+
+        /* Status & Log */
+        .status-bar { margin: 15px 0; padding: 10px; background: #eef; border-radius: 5px; font-size: 14px; color: #333; display: none; }
+        .progress { height: 4px; background: #ddd; width: 100%; margin-top: 5px; border-radius: 2px; }
+        .progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.3s; }
+
+        /* Output */
+        textarea { width: 100%; height: 400px; padding: 15px; border: 1px solid #ccc; border-radius: 8px; font-family: "Pyidaungsu", "Mon3"; font-size: 16px; line-height: 2; resize: vertical; }
+
+        /* Buttons */
+        .btn-group { display: flex; gap: 10px; margin: 15px 0; }
+        button { flex: 1; padding: 12px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; }
+        #scan-btn { background: var(--primary); }
+        #scan-btn:hover { background: #900; }
+        #scan-btn:disabled { background: #ccc; cursor: not-allowed; }
+        #copy-btn { background: #2e7d32; display: none; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🔎 Mon OCR (Debug Mode)</h2>
-    <input type="file" id="uploader" accept="image/*">
-    <button id="scan-btn" onclick="runOCR()">🚀 SCAN NOW</button>
-    
-    <h3>Output (လိက်တိတ်ကၠုင်):</h3>
-    <textarea id="output"></textarea>
-    
-    <h3>System Log (စၟဳစၟတ် Error):</h3>
-    <div id="log-area">Ready...</div>
+    <h2>🔎 Mon OCR Pro</h2>
+    <p class="subtitle">စက်ဗှ်လိက်မန် (Auto-Correction System)</p>
+
+    <div class="upload-box" onclick="document.getElementById('file-input').click()">
+        <input type="file" id="file-input" accept="image/*" style="display:none" onchange="loadFile(event)">
+        <p>📂 ဍဵုဒၞာဲဏအ် သွက်ဂွံရုဲဗီုရုပ် (Click to Upload)</p>
+        <img id="preview" alt="Preview">
+    </div>
+
+    <div id="status-box" class="status-bar">
+        <span id="status-text">Ready...</span>
+        <div class="progress"><div id="progress-bar" class="progress-fill"></div></div>
+    </div>
+
+    <div class="btn-group">
+        <button id="scan-btn" onclick="runOCR()">🚀 Scan Text</button>
+        <button id="copy-btn" onclick="copyText()">📋 Copy</button>
+    </div>
+
+    <textarea id="output" placeholder="လိက်တိတ်ကၠုင် ဒၞာဲဏအ်..."></textarea>
 </div>
 
 <script>
-    function log(msg) {
-        const logArea = document.getElementById('log-area');
-        logArea.innerHTML += `<div>> ${msg}</div>`;
-        logArea.scrollTop = logArea.scrollHeight;
+    // 1. Load Image
+    function loadFile(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const preview = document.getElementById('preview');
+            preview.src = URL.createObjectURL(file);
+            preview.style.display = 'block';
+            document.getElementById('status-text').innerText = "ဗီုရုပ်စိုပ်တုဲရ၊ ဍဵု Scan ညိ။";
+            document.getElementById('status-box').style.display = 'block';
+        }
     }
 
+    // 2. OCR Logic
     async function runOCR() {
-        const file = document.getElementById('uploader').files[0];
-        if (!file) { alert("Please select a file"); return; }
-        
+        const fileInput = document.getElementById('file-input');
+        const file = fileInput.files[0];
         const btn = document.getElementById('scan-btn');
+        const statusText = document.getElementById('status-text');
+        const progressBar = document.getElementById('progress-bar');
+        const output = document.getElementById('output');
+
+        if (!file) { alert("Please select an image!"); return; }
+
         btn.disabled = true;
-        log("Initializing Tesseract...");
-
+        output.value = "";
+        
         try {
-            // Create worker with specific logger
+            // Initialize Worker
+            statusText.innerText = "⏳ Initializing Tesseract (Loading Language)...";
             const worker = await Tesseract.createWorker("mya", 1, {
-                logger: m => log(`${m.status}: ${Math.round(m.progress * 100)}%`)
+                logger: m => {
+                    if (m.status === 'recognizing text') {
+                        const pct = Math.round(m.progress * 100);
+                        statusText.innerText = `⏳ Scanning... ${pct}%`;
+                        progressBar.style.width = pct + "%";
+                    } else {
+                        statusText.innerText = `⚙️ ${m.status}...`;
+                    }
+                }
             });
-            
-            log("Worker created. Recognizing...");
-            
-            const { data: { text } } = await worker.recognize(file);
-            log("Recognition Complete!");
-            
-            // --- YOUR MON FIX LOGIC ---
-            let fixed = text
-                .replace(/ကမ္ပန္ဘား/g, "ကမၠောန်")
-                .replace(/ကမ္ဘောနိ/g, "ကမၠောန်")
-                .replace(/ဟၞံ/g, "ဟွံ")
-                .replace(/တဲ်/g, "တုဲ")
-                .replace(/ဒ််/g, "ဒှ်");
-            // --------------------------
 
-            document.getElementById('output').value = fixed;
+            // Perform Scan
+            const { data: { text } } = await worker.recognize(file);
+            
+            // Fix Text
+            statusText.innerText = "🧹 Cleaning Text (ပလေဝ်မံင်လိက်)...";
+            const fixedText = fixMonText(text);
+            
+            output.value = fixedText;
+            statusText.innerText = "✅ Scan တုဲဒှ်ရ!";
+            document.getElementById('copy-btn').style.display = 'block';
+
             await worker.terminate();
 
-        } catch (error) {
-            log("❌ ERROR: " + error.message);
-            alert("Error: " + error.message + "\n(Check internet or CORS)");
+        } catch (err) {
+            console.error(err);
+            statusText.innerText = "❌ Error: " + err.message;
+            alert("Error! Please check your internet or run via Live Server.");
         } finally {
             btn.disabled = false;
         }
     }
-</script>
 
-</body>
-</html>
+    // 3. Mon Text Fixer (The Dictionary)
+    function fixMonText(text) {
+        let t = text;
+
+        // Specific Fixes for your Document
+        const fixes = [
+            { w: "ကမ္ပန္ဘား", r: "ကမၠောန်" },
+            { w: "ကမ္ဘောနိ", r: "ကမၠောန်" },
+            { w: "ကမ္ဘှောနိ",
