@@ -3,55 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mon OCR Master (Final)</title>
+    <title>Mon OCR Ultimate (All-in-One)</title>
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
     <style>
-        :root { --primary: #b71c1c; --secondary: #2e7d32; --bg: #f0f2f5; }
+        :root { --primary: #b71c1c; --secondary: #1b5e20; --bg: #f5f7fa; }
         body { font-family: "Pyidaungsu", "Mon3", sans-serif; background: var(--bg); padding: 20px; display: flex; justify-content: center; }
-        .container { background: white; max-width: 900px; width: 100%; padding: 25px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); border-top: 6px solid var(--primary); }
+        .container { background: white; max-width: 900px; width: 100%; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-top: 6px solid var(--primary); }
         
-        h2 { color: var(--primary); text-align: center; margin-bottom: 5px; }
-        .subtitle { text-align: center; color: #666; font-size: 0.9em; margin-bottom: 20px; }
+        h2 { color: var(--primary); text-align: center; margin-bottom: 5px; font-weight: bold; }
+        .subtitle { text-align: center; color: #555; margin-bottom: 20px; font-size: 0.9em; }
+        .badge { background: #ffe082; color: #ff6f00; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; vertical-align: middle; }
 
         /* Controls */
-        .controls { display: flex; gap: 15px; justify-content: center; margin-bottom: 15px; background: #fff8e1; padding: 10px; border-radius: 8px; border: 1px solid #ffe0b2; }
-        .switch-label { display: flex; align-items: center; cursor: pointer; font-size: 14px; font-weight: bold; color: #d84315; }
-        input[type="checkbox"] { transform: scale(1.5); margin-right: 10px; }
+        .controls { display: flex; justify-content: center; margin-bottom: 15px; background: #fff3e0; padding: 12px; border-radius: 8px; border: 1px solid #ffe0b2; }
+        .switch-label { display: flex; align-items: center; cursor: pointer; font-weight: bold; color: #e65100; font-size: 15px; }
+        input[type="checkbox"] { width: 20px; height: 20px; margin-right: 10px; accent-color: var(--primary); }
 
         /* Upload Area */
-        .upload-box { border: 2px dashed #ccc; padding: 20px; text-align: center; border-radius: 8px; cursor: pointer; transition: 0.3s; background: #fafafa; }
+        .upload-box { border: 2px dashed #90a4ae; padding: 20px; text-align: center; border-radius: 10px; cursor: pointer; transition: 0.3s; background: #fafafa; }
         .upload-box:hover { border-color: var(--primary); background: #fff5f5; }
-        #preview-container { display: flex; gap: 10px; justify-content: center; margin-top: 10px; flex-wrap: wrap; }
-        img.preview-img { max-height: 200px; border: 1px solid #ddd; border-radius: 5px; display: none; }
+        
+        #preview-container { display: flex; gap: 10px; justify-content: center; margin-top: 15px; flex-wrap: wrap; }
+        img.preview-img { max-height: 180px; border: 1px solid #ddd; border-radius: 6px; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
 
-        /* Status & Progress */
-        .status-bar { margin: 15px 0; padding: 10px; background: #e3f2fd; border-radius: 5px; font-size: 14px; color: #0d47a1; display: none; text-align: center; }
-        .progress { height: 6px; background: #cfd8dc; width: 100%; margin-top: 8px; border-radius: 3px; overflow: hidden; }
+        /* Progress */
+        .status-bar { margin: 15px 0; padding: 12px; background: #e3f2fd; border-radius: 6px; color: #0d47a1; display: none; text-align: center; font-weight: bold; }
+        .progress { height: 8px; background: #cfd8dc; width: 100%; margin-top: 8px; border-radius: 4px; overflow: hidden; }
         .progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.3s; }
 
         /* Output */
-        textarea { width: 100%; height: 500px; padding: 15px; border: 1px solid #ccc; border-radius: 8px; font-family: "Pyidaungsu", "Mon3", sans-serif; font-size: 16px; line-height: 2.2; resize: vertical; margin-top: 15px; }
+        textarea { width: 100%; height: 500px; padding: 15px; border: 1px solid #cfd8dc; border-radius: 8px; font-family: "Pyidaungsu", "Mon3", sans-serif; font-size: 16px; line-height: 2.2; resize: vertical; background: #fafafa; color: #333; }
 
         /* Buttons */
         .btn-group { display: flex; gap: 10px; margin-top: 15px; }
-        button { flex: 1; padding: 14px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; }
+        button { flex: 1; padding: 15px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
         #scan-btn { background: var(--primary); }
         #scan-btn:hover { background: #8e1515; }
         #copy-btn { background: var(--secondary); display: none; }
         #copy-btn:hover { background: #1b5e20; }
-        button:disabled { background: #bdbdbd; cursor: not-allowed; }
+        button:disabled { background: #b0bec5; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🔎 Mon OCR Master</h2>
-    <p class="subtitle">မန် + English + Auto-Fixer (All-in-One)</p>
+    <h2>Mon OCR Ultimate <span class="badge">Pro Max</span></h2>
+    <p class="subtitle">မန် + English + Auto-Cleaner + Smart Fixer</p>
 
     <div class="controls">
         <label class="switch-label">
             <input type="checkbox" id="invert-mode"> 
-            🔧 Enhance Mode
+            🔧 Enhance Mode (သွက် "လိက်အဖြူ / နောက်ခံအစိမ်း" ဍဵုဏအ်)
         </label>
     </div>
 
@@ -61,7 +63,7 @@
         
         <div id="preview-container">
             <img id="original-preview" class="preview-img" alt="Original">
-            <img id="processed-preview" class="preview-img" alt="Processed" style="filter: grayscale(100%);">
+            <img id="processed-preview" class="preview-img" alt="Processed (Inverted)" style="filter: grayscale(100%);">
         </div>
         <canvas id="canvas-processor" style="display:none;"></canvas>
     </div>
@@ -72,46 +74,47 @@
     </div>
 
     <div class="btn-group">
-        <button id="scan-btn" onclick="runOCR()" disabled>🚀 Scan Text</button>
+        <button id="scan-btn" onclick="runOCR()" disabled>🚀 Scan & Clean</button>
         <button id="copy-btn" onclick="copyText()">📋 Copy Text</button>
     </div>
 
-    <textarea id="output" placeholder="လိက်တိတ်ကၠုၚ် ဒၞာဲဏအ်..."></textarea>
+    <textarea id="output" placeholder="လိက်မန် သ္အးသ္အးဇ္ၚးဇ္ၚး တိတ်ကၠုင်ဒၞာဲဏအ်ရ..."></textarea>
 </div>
 
 <script>
-    let finalImageBlob = null; // The image ready for Tesseract
+    let finalImageBlob = null; // Stores the final processed image
 
-    // 1. IMAGE PROCESSING (Handle White Text / Green Background)
+    // ==========================================
+    // MODULE 1: IMAGE PROCESSING (Invert Colors)
+    // ==========================================
     function processImage(event) {
         const file = event.target.files[0];
         if (!file) return;
 
-        // Show Original
+        // Display Original
         const origPrev = document.getElementById('original-preview');
         origPrev.src = URL.createObjectURL(file);
         origPrev.style.display = 'block';
+        document.getElementById('processed-preview').style.display = 'none';
 
         const reader = new FileReader();
         reader.onload = function(e) {
             const img = new Image();
             img.onload = function() {
-                // Check if Invert Mode is ON
+                // Check Enhance Mode
                 const useInvert = document.getElementById('invert-mode').checked;
                 
                 if (!useInvert) {
-                    // Normal Mode: Just use the file directly
-                    finalImageBlob = file;
-                    document.getElementById('processed-preview').style.display = 'none';
+                    finalImageBlob = file; // No processing needed
                     readyToScan();
                     return;
                 }
 
-                // Enhanced Mode: Use Canvas to Invert
+                // If Enhance Mode is ON: Use Canvas
                 const canvas = document.getElementById('canvas-processor');
                 const ctx = canvas.getContext('2d');
                 
-                // Resize for performance
+                // Resize logic (Max 1500px for speed)
                 let w = img.width, h = img.height;
                 const max = 1500;
                 if (w > max || h > max) { const r = Math.min(max/w, max/h); w*=r; h*=r; }
@@ -122,18 +125,18 @@
                 const imageData = ctx.getImageData(0, 0, w, h);
                 const data = imageData.data;
 
-                // INVERT LOGIC (White Text -> Black Text)
+                // INVERT: White Text -> Black Text
                 for (let i = 0; i < data.length; i += 4) {
                     const avg = (data[i] + data[i+1] + data[i+2]) / 3;
-                    if (avg > 160) { // Light color (Text) -> Make Black
-                        data[i]=0; data[i+1]=0; data[i+2]=0;
-                    } else { // Dark color (Background) -> Make White
-                        data[i]=255; data[i+1]=255; data[i+2]=255;
+                    if (avg > 160) { // If pixel is light (Text)
+                        data[i]=0; data[i+1]=0; data[i+2]=0; // Make Black
+                    } else { // If pixel is dark (Background)
+                        data[i]=255; data[i+1]=255; data[i+2]=255; // Make White
                     }
                 }
                 ctx.putImageData(imageData, 0, 0);
 
-                // Show Processed Preview
+                // Show Processed
                 const procPrev = document.getElementById('processed-preview');
                 procPrev.src = canvas.toDataURL();
                 procPrev.style.display = 'block';
@@ -154,7 +157,9 @@
         document.getElementById('status-box').style.display = 'block';
     }
 
-    // 2. OCR ENGINE
+    // ==========================================
+    // MODULE 2: OCR ENGINE (Tesseract)
+    // ==========================================
     async function runOCR() {
         if (!finalImageBlob) return;
 
@@ -165,11 +170,11 @@
 
         btn.disabled = true;
         output.value = "";
+        document.getElementById('copy-btn').style.display = 'none';
 
         try {
             statusText.innerText = "⏳ Initializing Engine (Mon + English)...";
             
-            // Load Myanmar + English
             const worker = await Tesseract.createWorker("mya+eng", 1, {
                 logger: m => {
                     if (m.status === 'recognizing text') {
@@ -184,12 +189,13 @@
 
             const { data: { text } } = await worker.recognize(finalImageBlob);
             
-            statusText.innerText = "🧹 Smart Fixing (Deleting Garbage)...";
-            const cleanText = smartFixText(text);
+            statusText.innerText = "🧹 Cleaning Emojis & Smart Fixing...";
+            const cleanText = smartCleaner(text);
             
             output.value = cleanText;
             statusText.innerText = "✅ Complete!";
             document.getElementById('copy-btn').style.display = 'inline-block';
+            progressBar.style.width = "100%";
 
             await worker.terminate();
 
@@ -201,27 +207,86 @@
         }
     }
 
-    // 3. THE SMART FIXER (Logic Core)
-    function smartFixText(text) {
+    // ==========================================
+    // MODULE 3: SMART CLEANER & DICTIONARY
+    // ==========================================
+    function smartCleaner(text) {
         if (!text) return "";
 
-        // A. THE DICTIONARY (Common Errors -> Correct Mon)
+        // 1. The Mon Dictionary
         const dict = [
-            // WORK (ကမၠောန်)
+            // WORK
             { w: "ကမ္ပန္ဘား", r: "ကမၠောန်" }, { w: "ကမ္ဘောနိ", r: "ကမၠောန်" },
             { w: "ကမ္ဘှောနိ", r: "ကမၠောန်" }, { w: "က္ခာနိ", r: "ကမၠောန်" },
-            
             // LOCATIONS
             { w: "ချၚ်သေံ", r: "ဍုင်သေံ" }, { w: "ချၚ်", r: "ဍုင်" },
             { w: "မုဟ်ဥ္ရုၚ်", r: "မုဟ်ဒုၚ်" }, { w: "ရေဝ", r: "ရေဝ်" },
             { w: "ကျခ်ထဝ်", r: "ကျာ်ထဝ်" }, { w: "ဘာအၚိ", r: "ဘာအၚ်" },
-
+            { w: "ပံၚ်", r: "ပံၚ်" }, { w: "မတ်မလီု", r: "မတ်မလီု" },
             // VOCAB
             { w: "မ္စိဟ်", r: "မၞိဟ်" }, { w: "တာလျိုၚ်", r: "တာလျိုင်" },
             { w: "အနာကုလာ", r: "အနာကုလာ" }, { w: "ခရော်ထဝ်", r: "ခရော်ထဝ်" },
             { w: "ဒေဝဒတ်", r: "ဒေဝဒတ်" }, { w: "မ္ဂှ်ျမပြဲ", r: "မင်္ဂလမပြဲ" },
             { w: "သှာံ", r: "သၞာံ" }, { w: "လဵာန်", r: "လောန်" },
-            { w: "အရေရ်", r: "အရေဝ်" }
+            { w: "အရေရ်", r: "အရေဝ်" }, { w: "စိုတ်", r: "စိုပ်" }
+        ];
+
+        let lines = text.split('\n');
+        let processed = [];
+
+        lines.forEach(line => {
+            let s = line.trim();
+            if (s.length === 0) return;
+
+            // 2. CLEANER: Remove Emojis & Garbage Symbols
+            // Removes: 😃, 🙏, ©, ®, ™, @, #, $, %, etc.
+            s = s.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
+            s = s.replace(/[©®™@#$%^&*_\+=<>\\\|~`]/g, ""); 
+
+            // 3. SMART FILTER: Check Language
+            let engChars = (s.match(/[a-zA-Z]/g) || []).length;
+            let monChars = (s.match(/[က-အ]/g) || []).length;
+
+            // If mostly English -> Keep AS IS (but clean emojis)
+            if (engChars > monChars && engChars > 0) {
+                if(s.length > 2) processed.push(s);
+                return;
+            }
+
+            // 4. MON FIXER (Only if line is mostly Mon)
+            dict.forEach(d => { s = s.replace(new RegExp(d.w, "g"), d.r); });
+
+            // Grammar & Particle Fixes
+            s = s
+            .replace(/ဟၞံ/g, "ဟွံ").replace(/ဟံၞ/g, "ဟွံ")
+            .replace(/တဲ်/g, "တုဲ").replace(/တဲံ/g, "တုဲ")
+            .replace(/ဒ််/g, "ဒှ်").replace(/ဒ်/g, "ဒှ်")
+            .replace(/ဟွံကို/g, "ဟွံဂွံ").replace(/ဏံ/g, "ဏအ်")
+            .replace(/င/g, "ၚ").replace(/ၺ/g, "ည")
+            .replace(/ရး/g, "ရ။").replace(/ရႈ/g, "ရ။")
+            .replace(/[\[\]\{\}]/g, "")
+            .replace(/\s\s+/g, ' '); // Remove double spaces
+
+            if (s.length > 1) { processed.push(s); }
+        });
+
+        return processed.join('\n');
+    }
+
+    function copyText() {
+        const output = document.getElementById('output');
+        output.select();
+        document.execCommand('copy');
+        const btn = document.getElementById('copy-btn');
+        const originalText = btn.innerText;
+        btn.innerText = "✅ Copied!";
+        setTimeout(()=>{ btn.innerText = originalText; }, 2000);
+    }
+</script>
+
+</body>
+</html>
+   { w: "အရေရ်", r: "အရေဝ်" }
         ];
 
         let lines = text.split('\n');
