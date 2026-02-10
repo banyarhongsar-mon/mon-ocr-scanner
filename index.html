@@ -3,178 +3,279 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mon OCR (Big Dictionary)</title>
+    <title>Mon OCR Master (Final)</title>
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
     <style>
-        :root { --primary: #0d47a1; --bg: #f4f6f8; }
-        body { font-family: "Pyidaungsu", "Mon3", sans-serif; background: var(--bg); padding: 20px; }
-        .container { background: white; max-width: 900px; margin: 0 auto; padding: 25px; border-radius: 12px; border-top: 5px solid var(--primary); }
+        :root { --primary: #b71c1c; --secondary: #2e7d32; --bg: #f0f2f5; }
+        body { font-family: "Pyidaungsu", "Mon3", sans-serif; background: var(--bg); padding: 20px; display: flex; justify-content: center; }
+        .container { background: white; max-width: 900px; width: 100%; padding: 25px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.1); border-top: 6px solid var(--primary); }
         
-        h2 { text-align: center; color: var(--primary); }
-        .stats { text-align: center; color: #666; font-size: 0.9em; margin-bottom: 20px; }
-        
-        /* Upload & Output */
-        .upload-area { border: 2px dashed #ccc; padding: 30px; text-align: center; cursor: pointer; background: #fafafa; border-radius: 8px; }
-        .upload-area:hover { background: #e3f2fd; border-color: var(--primary); }
-        
-        textarea { width: 100%; height: 500px; margin-top: 20px; padding: 15px; border: 1px solid #ddd; font-family: "Pyidaungsu", "Mon3"; font-size: 16px; line-height: 2; }
-        
-        button { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 10px; border-radius: 5px; }
-        button:disabled { background: #b0bec5; }
-        
-        #log { font-size: 12px; color: #555; margin-top: 10px; height: 100px; overflow-y: scroll; background: #eee; padding: 10px; display: none;}
+        h2 { color: var(--primary); text-align: center; margin-bottom: 5px; }
+        .subtitle { text-align: center; color: #666; font-size: 0.9em; margin-bottom: 20px; }
+
+        /* Controls */
+        .controls { display: flex; gap: 15px; justify-content: center; margin-bottom: 15px; background: #fff8e1; padding: 10px; border-radius: 8px; border: 1px solid #ffe0b2; }
+        .switch-label { display: flex; align-items: center; cursor: pointer; font-size: 14px; font-weight: bold; color: #d84315; }
+        input[type="checkbox"] { transform: scale(1.5); margin-right: 10px; }
+
+        /* Upload Area */
+        .upload-box { border: 2px dashed #ccc; padding: 20px; text-align: center; border-radius: 8px; cursor: pointer; transition: 0.3s; background: #fafafa; }
+        .upload-box:hover { border-color: var(--primary); background: #fff5f5; }
+        #preview-container { display: flex; gap: 10px; justify-content: center; margin-top: 10px; flex-wrap: wrap; }
+        img.preview-img { max-height: 200px; border: 1px solid #ddd; border-radius: 5px; display: none; }
+
+        /* Status & Progress */
+        .status-bar { margin: 15px 0; padding: 10px; background: #e3f2fd; border-radius: 5px; font-size: 14px; color: #0d47a1; display: none; text-align: center; }
+        .progress { height: 6px; background: #cfd8dc; width: 100%; margin-top: 8px; border-radius: 3px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.3s; }
+
+        /* Output */
+        textarea { width: 100%; height: 500px; padding: 15px; border: 1px solid #ccc; border-radius: 8px; font-family: "Pyidaungsu", "Mon3", sans-serif; font-size: 16px; line-height: 2.2; resize: vertical; margin-top: 15px; }
+
+        /* Buttons */
+        .btn-group { display: flex; gap: 10px; margin-top: 15px; }
+        button { flex: 1; padding: 14px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; }
+        #scan-btn { background: var(--primary); }
+        #scan-btn:hover { background: #8e1515; }
+        #copy-btn { background: var(--secondary); display: none; }
+        #copy-btn:hover { background: #1b5e20; }
+        button:disabled { background: #bdbdbd; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>📚 Mon OCR + 10K Dict Ready</h2>
-    <p class="stats" id="dict-status">Loading Dictionary...</p>
+    <h2>🔎 Mon OCR Master</h2>
+    <p class="subtitle">မန် + English + Auto-Fixer (All-in-One)</p>
 
-    <div class="upload-area" onclick="document.getElementById('inp').click()">
-        <p>📂 Upload Image Here</p>
-        <input type="file" id="inp" accept="image/*" style="display:none" onchange="preview(event)">
-        <img id="img-prev" style="max-height: 200px; display:none; margin: 0 auto;">
+    <div class="controls">
+        <label class="switch-label">
+            <input type="checkbox" id="invert-mode"> 
+            🔧 Enhance Mode (သွက် "လိက်အဖြူ / နောက်ခံအစိမ်း" ဍဵုဏအ်)
+        </label>
     </div>
 
-    <div id="log"></div>
-    <button id="btn" onclick="runOCR()" disabled>🚀 Scan Text</button>
-    <textarea id="out" placeholder="Result..."></textarea>
+    <div class="upload-box" onclick="document.getElementById('file-input').click()">
+        <input type="file" id="file-input" accept="image/*" style="display:none" onchange="processImage(event)">
+        <p>📂 ဍဵုဒၞာဲဏအ် သွက်ဂွံရုဲဗီုရုပ် (Click to Upload)</p>
+        
+        <div id="preview-container">
+            <img id="original-preview" class="preview-img" alt="Original">
+            <img id="processed-preview" class="preview-img" alt="Processed" style="filter: grayscale(100%);">
+        </div>
+        <canvas id="canvas-processor" style="display:none;"></canvas>
+    </div>
+
+    <div id="status-box" class="status-bar">
+        <span id="status-text">Ready...</span>
+        <div class="progress"><div id="progress-bar" class="progress-fill"></div></div>
+    </div>
+
+    <div class="btn-group">
+        <button id="scan-btn" onclick="runOCR()" disabled>🚀 Scan Text</button>
+        <button id="copy-btn" onclick="copyText()">📋 Copy Text</button>
+    </div>
+
+    <textarea id="output" placeholder="လိက်တိတ်ကၠုင် ဒၞာဲဏအ်..."></textarea>
 </div>
 
 <script>
-    // ==========================================
-    // 1. THE BIG DICTIONARY DATABASE (Data Store)
-    // ==========================================
-    // You can add up to 10,000 words here safely.
-    // Format: { w: "WrongWord", r: "RightWord" }
-    
-    const MON_DB = {
-        // GROUP A: Locations (Places)
-        locations: [
-            { w: "ချၚ်သေံထာဲ", r: "ဍုင်သေံထာဲ" }, { w: "ချၚ်သေံ", r: "ဍုင်သေံ" },
-            { w: "ချၚ်", r: "ဍုင်" }, { w: "မုဟ်ဥ္ရုၚ်", r: "မုဟ်ဒုၚ်" },
-            { w: "ရေဝ", r: "ရေဝ်" }, { w: "ကျခ်ထဝ်", r: "ကျာ်ထဝ်" },
-            { w: "ဇြပ်ဗု", r: "ဇြပ်ဗု" }, { w: "ဘာအၚိ", r: "ဘာအၚ်" },
-            { w: "မတ်မလီု", r: "မတ်မလီု" }, { w: "လ္ဂုၚ်", r: "လ္ဂုၚ်" }
-              { w: "ကမ္ပန္ဘား", r: "ကမၠောန်" }, { w: "ကမ္ဘောနိ", r: "ကမၠောန်" }
-        ],
+    let finalImageBlob = null; // The image ready for Tesseract
 
-        // GROUP B: Common OCR Glitches (Grammar/Particles)
-        glitches: [
-            { w: "ဟၞံ", r: "ဟွံ" }, { w: "ဟံၞ", r: "ဟွံ" },
-            { w: "တဲ်", r: "တုဲ" }, { w: "တဲံ", r: "တုဲ" },
-            { w: "ဒ််", r: "ဒှ်" }, { w: "ဒ်", r: "ဒှ်" },
-            { w: "ကို", r: "ကဵု" }, { w: "ဏံ", r: "ဏအ်" },
-            { w: "ရး", r: "ရ။" }, { w: "ရႈ", r: "ရ။" },
-            { w: "။။", r: "။" }, { w: "င", r: "ၚ" }, { w: "ၺ", r: "ည" }
-        ],
+    // 1. IMAGE PROCESSING (Handle White Text / Green Background)
+    function processImage(event) {
+        const file = event.target.files[0];
+        if (!file) return;
 
-        // GROUP C: Vocabulary (Add your 10,000 words here)
-        vocab: [
-            { w: "ကမ္ပန္ဘား", r: "ကမၠောန်" }, { w: "ကမ္ဘောနိ", r: "ကမၠောန်" },
-            { w: "မ္စိဟ်", r: "မၞိဟ်" }, { w: "တာလျိုၚ်", r: "တာလျိုင်" },
-            { w: "အနာကုလာ", r: "အနာကုလာ" }, { w: "ခရော်ထဝ်", r: "ခရော်ထဝ်" },
-            { w: "ဒေဝဒတ်", r: "ဒေဝဒတ်" }, { w: "မ္ဂှ်ျမပြဲ", r: "မင်္ဂလမပြဲ" },
-            { w: "သှာံ", r: "သၞာံ" }, { w: "လဵာန်", r: "လောန်" },
-            { w: "စိုတ်", r: "စိုပ်" }, { w: "အရေရ်", r: "အရေဝ်" },
-            
-            // --- ADD MORE BELOW THIS LINE ---
-            // Copy line below and change words
-            // { w: "Wrong", r: "Right" },
-            { w: "မနဲ", r: "မွဲ" },
-            { w: "အုတဂှ", r: "အိုတ်ဂှ်" },
-            { w: "လၞီစ", r: "လွဳစ" }
-        ]
-    };
+        // Show Original
+        const origPrev = document.getElementById('original-preview');
+        origPrev.src = URL.createObjectURL(file);
+        origPrev.style.display = 'block';
 
-    // Flatten the database for speed
-    let MASTER_DICT = [];
-    function initDict() {
-        MASTER_DICT = [
-            ...MON_DB.locations, 
-            ...MON_DB.glitches, 
-            ...MON_DB.vocab
-        ];
-        document.getElementById('dict-status').innerText = `📚 Dictionary Loaded: ${MASTER_DICT.length} words ready.`;
-    }
-    initDict();
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                // Check if Invert Mode is ON
+                const useInvert = document.getElementById('invert-mode').checked;
+                
+                if (!useInvert) {
+                    // Normal Mode: Just use the file directly
+                    finalImageBlob = file;
+                    document.getElementById('processed-preview').style.display = 'none';
+                    readyToScan();
+                    return;
+                }
 
-    // ==========================================
-    // 2. CORE LOGIC
-    // ==========================================
+                // Enhanced Mode: Use Canvas to Invert
+                const canvas = document.getElementById('canvas-processor');
+                const ctx = canvas.getContext('2d');
+                
+                // Resize for performance
+                let w = img.width, h = img.height;
+                const max = 1500;
+                if (w > max || h > max) { const r = Math.min(max/w, max/h); w*=r; h*=r; }
 
-    function preview(e) {
-        const file = e.target.files[0];
-        if(file){
-            document.getElementById('img-prev').src = URL.createObjectURL(file);
-            document.getElementById('img-prev').style.display = 'block';
-            document.getElementById('btn').disabled = false;
-        }
+                canvas.width = w; canvas.height = h;
+                ctx.drawImage(img, 0, 0, w, h);
+
+                const imageData = ctx.getImageData(0, 0, w, h);
+                const data = imageData.data;
+
+                // INVERT LOGIC (White Text -> Black Text)
+                for (let i = 0; i < data.length; i += 4) {
+                    const avg = (data[i] + data[i+1] + data[i+2]) / 3;
+                    if (avg > 160) { // Light color (Text) -> Make Black
+                        data[i]=0; data[i+1]=0; data[i+2]=0;
+                    } else { // Dark color (Background) -> Make White
+                        data[i]=255; data[i+1]=255; data[i+2]=255;
+                    }
+                }
+                ctx.putImageData(imageData, 0, 0);
+
+                // Show Processed Preview
+                const procPrev = document.getElementById('processed-preview');
+                procPrev.src = canvas.toDataURL();
+                procPrev.style.display = 'block';
+
+                canvas.toBlob(blob => {
+                    finalImageBlob = blob;
+                    readyToScan();
+                });
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
     }
 
+    function readyToScan() {
+        document.getElementById('scan-btn').disabled = false;
+        document.getElementById('status-text').innerText = "Image Loaded. Click Scan.";
+        document.getElementById('status-box').style.display = 'block';
+    }
+
+    // 2. OCR ENGINE
     async function runOCR() {
-        const btn = document.getElementById('btn');
-        const file = document.getElementById('inp').files[0];
-        const log = document.getElementById('log');
-        log.style.display = 'block';
+        if (!finalImageBlob) return;
+
+        const btn = document.getElementById('scan-btn');
+        const statusText = document.getElementById('status-text');
+        const progressBar = document.getElementById('progress-bar');
+        const output = document.getElementById('output');
+
         btn.disabled = true;
+        output.value = "";
 
         try {
-            log.innerHTML += "<div>⏳ Starting Engine...</div>";
-            const worker = await Tesseract.createWorker("mya", 1, {
+            statusText.innerText = "⏳ Initializing Engine (Mon + English)...";
+            
+            // Load Myanmar + English
+            const worker = await Tesseract.createWorker("mya+eng", 1, {
                 logger: m => {
-                    if(m.status === 'recognizing text') 
-                        log.innerHTML = `<div>Scanning: ${Math.round(m.progress*100)}%</div>`;
+                    if (m.status === 'recognizing text') {
+                        const pct = Math.round(m.progress * 100);
+                        statusText.innerText = `⏳ Scanning... ${pct}%`;
+                        progressBar.style.width = pct + "%";
+                    } else {
+                        statusText.innerText = `⚙️ ${m.status}...`;
+                    }
                 }
             });
 
-            const { data: { text } } = await worker.recognize(file);
+            const { data: { text } } = await worker.recognize(finalImageBlob);
             
-            log.innerHTML += "<div>🧹 Running Dictionary Check...</div>";
+            statusText.innerText = "🧹 Smart Fixing (Deleting Garbage)...";
+            const cleanText = smartFixText(text);
             
-            // OPTIMIZED FIX FUNCTION
-            const fixedText = applyDictionary(text);
-            
-            document.getElementById('out').value = fixedText;
-            log.innerHTML += "<div>✅ Done!</div>";
+            output.value = cleanText;
+            statusText.innerText = "✅ Complete!";
+            document.getElementById('copy-btn').style.display = 'inline-block';
+
             await worker.terminate();
 
-        } catch (e) {
-            alert(e.message);
+        } catch (err) {
+            alert("Error: " + err.message + "\n(Check Internet or CORS)");
+            statusText.innerText = "❌ Failed.";
         } finally {
             btn.disabled = false;
         }
     }
 
-    function applyDictionary(text) {
+    // 3. THE SMART FIXER (Logic Core)
+    function smartFixText(text) {
         if (!text) return "";
-        let result = text;
 
-        // 1. Basic Char Cleanups (Fastest)
-        result = result.replace(/င/g, "ၚ").replace(/ၺ/g, "ည");
+        // A. THE DICTIONARY (Common Errors -> Correct Mon)
+        const dict = [
+            // WORK (ကမၠောန်)
+            { w: "ကမ္ပန္ဘား", r: "ကမၠောန်" }, { w: "ကမ္ဘောနိ", r: "ကမၠောန်" },
+            { w: "ကမ္ဘှောနိ", r: "ကမၠောန်" }, { w: "က္ခာနိ", r: "ကမၠောန်" },
+            
+            // LOCATIONS
+            { w: "ချၚ်သေံ", r: "ဍုင်သေံ" }, { w: "ချၚ်", r: "ဍုင်" },
+            { w: "မုဟ်ဥ္ရုၚ်", r: "မုဟ်ဒုၚ်" }, { w: "ရေဝ", r: "ရေဝ်" },
+            { w: "ကျခ်ထဝ်", r: "ကျာ်ထဝ်" }, { w: "ဘာအၚိ", r: "ဘာအၚ်" },
 
-        // 2. Dictionary Loop
-        // We use a simple loop. For 10,000 words, this takes about 0.5-1 second.
-        MASTER_DICT.forEach(item => {
-            // Using split/join is often faster than Regex for simple words
-            // But Regex is needed for global replacement
-            if (result.includes(item.w)) {
-                // Only run regex if the wrong word actually exists in text
-                let reg = new RegExp(item.w, "g");
-                result = result.replace(reg, item.r);
+            // VOCAB
+            { w: "မ္စိဟ်", r: "မၞိဟ်" }, { w: "တာလျိုၚ်", r: "တာလျိုင်" },
+            { w: "အနာကုလာ", r: "အနာကုလာ" }, { w: "ခရော်ထဝ်", r: "ခရော်ထဝ်" },
+            { w: "ဒေဝဒတ်", r: "ဒေဝဒတ်" }, { w: "မ္ဂှ်ျမပြဲ", r: "မင်္ဂလမပြဲ" },
+            { w: "သှာံ", r: "သၞာံ" }, { w: "လဵာန်", r: "လောန်" },
+            { w: "အရေရ်", r: "အရေဝ်" }
+        ];
+
+        let lines = text.split('\n');
+        let processed = [];
+
+        lines.forEach(line => {
+            let s = line.trim();
+            if (s.length === 0) return;
+
+            // B. SMART FILTER: Is this line mostly English?
+            let engChars = (s.match(/[a-zA-Z]/g) || []).length;
+            let monChars = (s.match(/[က-အ]/g) || []).length;
+            
+            // If more English than Mon, keep it AS IS (Don't fix)
+            if (engChars > monChars) {
+                processed.push(s); 
+                return;
+            }
+
+            // C. IF MON -> APPLY FIXES
+            
+            // 1. Dictionary Replace
+            dict.forEach(d => {
+                s = s.replace(new RegExp(d.w, "g"), d.r);
+            });
+
+            // 2. Grammar Rules
+            s = s
+            .replace(/ဟၞံ/g, "ဟွံ").replace(/ဟံၞ/g, "ဟွံ") // Not
+            .replace(/တဲ်/g, "တုဲ").replace(/တဲံ/g, "တုဲ") // Done
+            .replace(/ဒ််/g, "ဒှ်").replace(/ဒ်/g, "ဒှ်")   // Is
+            .replace(/ဟွံကို/g, "ဟွံဂွံ")
+            .replace(/ဏံ/g, "ဏအ်")
+            .replace(/င/g, "ၚ").replace(/ၺ/g, "ည")      // Char fix
+            .replace(/ရး/g, "ရ။").replace(/ရႈ/g, "ရ။")   // Punctuation
+            .replace(/[\[\]\{\}]/g, "")                 // Remove brackets
+            .replace(/\|/g, "");                        // Remove pipes
+
+            // 3. Length Check (Remove tiny garbage)
+            if (s.length > 2) {
+                processed.push(s);
             }
         });
 
-        // 3. Line Garbage Filter
-        return result.split('\n').filter(line => {
-            let s = line.trim();
-            let monChars = (s.match(/[က-အ]/g) || []).length;
-            return monChars > 2; 
-        }).join('\n');
+        return processed.join('\n');
+    }
+
+    function copyText() {
+        const output = document.getElementById('output');
+        output.select();
+        document.execCommand('copy');
+        alert("Copied to Clipboard!");
     }
 </script>
 
 </body>
 </html>
-
