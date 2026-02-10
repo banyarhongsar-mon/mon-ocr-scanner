@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mon OCR Pro (Fixed)</title>
+    <title>Mon + English OCR</title>
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
     <style>
         :root { --primary: #b71c1c; --bg: #f3f4f6; }
@@ -12,33 +12,25 @@
         h2 { color: var(--primary); text-align: center; margin-bottom: 5px; }
         .subtitle { text-align: center; color: #666; font-size: 0.9em; margin-bottom: 20px; }
         
-        /* Upload Area */
         .upload-box { border: 2px dashed #ddd; padding: 20px; text-align: center; border-radius: 8px; cursor: pointer; transition: 0.3s; background: #fafafa; }
         .upload-box:hover { border-color: var(--primary); background: #fff5f5; }
-        #preview { max-width: 100%; max-height: 250px; margin-top: 10px; display: none; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        #preview { max-width: 100%; max-height: 250px; margin-top: 10px; display: none; border-radius: 5px; }
 
-        /* Status & Log */
         .status-bar { margin: 15px 0; padding: 10px; background: #eef; border-radius: 5px; font-size: 14px; color: #333; display: none; }
         .progress { height: 4px; background: #ddd; width: 100%; margin-top: 5px; border-radius: 2px; }
         .progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.3s; }
 
-        /* Output */
-        textarea { width: 100%; height: 400px; padding: 15px; border: 1px solid #ccc; border-radius: 8px; font-family: "Pyidaungsu", "Mon3"; font-size: 16px; line-height: 2; resize: vertical; }
+        textarea { width: 100%; height: 400px; padding: 15px; border: 1px solid #ccc; border-radius: 8px; font-family: "Pyidaungsu", "Mon3", sans-serif; font-size: 16px; line-height: 2; resize: vertical; }
 
-        /* Buttons */
-        .btn-group { display: flex; gap: 10px; margin: 15px 0; }
-        button { flex: 1; padding: 12px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; }
-        #scan-btn { background: var(--primary); }
-        #scan-btn:hover { background: #900; }
-        #scan-btn:disabled { background: #ccc; cursor: not-allowed; }
-        #copy-btn { background: #2e7d32; display: none; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; color: white; background: var(--primary); margin-top: 10px; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🔎 Mon OCR Pro</h2>
-    <p class="subtitle">စက်ဗှ်လိက်မန် (Auto-Correction System)</p>
+    <h2>🔎 Mon + English OCR</h2>
+    <p class="subtitle">စက်ဗှ်လိက်မန် ကေုာံ အင်္ဂလိက် (Dual Mode)</p>
 
     <div class="upload-box" onclick="document.getElementById('file-input').click()">
         <input type="file" id="file-input" accept="image/*" style="display:none" onchange="loadFile(event)">
@@ -51,16 +43,11 @@
         <div class="progress"><div id="progress-bar" class="progress-fill"></div></div>
     </div>
 
-    <div class="btn-group">
-        <button id="scan-btn" onclick="runOCR()">🚀 Scan Text</button>
-        <button id="copy-btn" onclick="copyText()">📋 Copy</button>
-    </div>
-
-    <textarea id="output" placeholder="လိက်တိတ်ကၠုင် ဒၞာဲဏအ်..."></textarea>
+    <button id="scan-btn" onclick="runOCR()">🚀 Scan Text</button>
+    <textarea id="output" placeholder="လိက်မန် + English တိတ်ကၠုင် ဒၞာဲဏအ်..."></textarea>
 </div>
 
 <script>
-    // 1. Load Image
     function loadFile(event) {
         const file = event.target.files[0];
         if (file) {
@@ -72,7 +59,6 @@
         }
     }
 
-    // 2. OCR Logic
     async function runOCR() {
         const fileInput = document.getElementById('file-input');
         const file = fileInput.files[0];
@@ -87,9 +73,10 @@
         output.value = "";
         
         try {
-            // Initialize Worker
-            statusText.innerText = "⏳ Initializing Tesseract (Loading Language)...";
-            const worker = await Tesseract.createWorker("mya", 1, {
+            statusText.innerText = "⏳ Initializing (Myanmar + English)...";
+            
+            // KEY CHANGE: Load BOTH languages ('mya+eng')
+            const worker = await Tesseract.createWorker("mya+eng", 1, {
                 logger: m => {
                     if (m.status === 'recognizing text') {
                         const pct = Math.round(m.progress * 100);
@@ -101,81 +88,86 @@
                 }
             });
 
-            // Perform Scan
             const { data: { text } } = await worker.recognize(file);
             
-            // Fix Text
-            statusText.innerText = "🧹 Cleaning Text (ပလေဝ်မံင်လိက်)...";
-            const fixedText = fixMonText(text);
+            statusText.innerText = "🧹 Processing Text...";
+            const fixedText = fixMonText(text); // Run the smart fixer
             
             output.value = fixedText;
             statusText.innerText = "✅ Scan တုဲဒှ်ရ!";
-            document.getElementById('copy-btn').style.display = 'block';
 
             await worker.terminate();
 
         } catch (err) {
             console.error(err);
             statusText.innerText = "❌ Error: " + err.message;
-            alert("Error! Please check your internet or run via Live Server.");
+            alert("Error! Please check internet connection.");
         } finally {
             btn.disabled = false;
         }
     }
 
-    // 3. Mon Text Fixer (The Dictionary)
+    // --- SMART FIXER (Preserves English) ---
     function fixMonText(text) {
-        let t = text;
+        if (!text) return "";
+        
+        // 1. Split lines to process them individually
+        let lines = text.split('\n');
+        
+        let processedLines = lines.map(line => {
+            let cleanLine = line.trim();
+            if (cleanLine.length === 0) return null;
 
-        // Specific Fixes for your Document
-        const fixes = [
-            { w: "ကမ္ပန္ဘား", r: "ကမၠောန်" },
-            { w: "ကမ္ဘောနိ", r: "ကမၠောန်" },
-            { w: "ကမ္ဘှောနိ", r: "ကမၠောန်" },
-            { w: "က္ခာနိ", r: "ကမၠောန်" },
-            { w: "ကမၠောနိ", r: "ကမၠောန်" },
-            { w: "မ္စိဟ်", r: "မၞိဟ်" },
-            { w: "တာလျိုၚ်", r: "တာလျိုင်" },
-            { w: "အနာကုလာ", r: "အနာကုလာ" },
-            { w: "ခရော်ထဝ်", r: "ခရော်ထဝ်" },
-            { w: "ဒေဝဒတ်", r: "ဒေဝဒတ်" },
-            { w: "မ္ဂှ်ျမပြဲ", r: "မင်္ဂလမပြဲ" }
-        ];
+            // CHECK: Is this line mostly English?
+            // If English letters > Mon letters, do NOT fix it.
+            let engCount = (cleanLine.match(/[a-zA-Z]/g) || []).length;
+            let monCount = (cleanLine.match(/[က-အ]/g) || []).length;
 
-        fixes.forEach(fix => {
-            t = t.replace(new RegExp(fix.w, "g"), fix.r);
+            if (engCount > monCount) {
+                return cleanLine; // Return English text AS IS (အတိုင်ပကတိ)
+            }
+
+            // IF MON TEXT -> APPLY FIXES
+            let t = cleanLine;
+
+            // Specific Mon Fixes
+            const fixes = [
+                { w: "ကမ္ပန္ဘား", r: "ကမၠောန်" },
+                { w: "ကမ္ဘောနိ", r: "ကမၠောန်" },
+                { w: "ကမ္ဘှောနိ", r: "ကမၠောန်" },
+                { w: "က္ခာနိ", r: "ကမၠောန်" },
+                { w: "တာလျိုၚ်", r: "တာလျိုင်" },
+                { w: "အနာကုလာ", r: "အနာကုလာ" },
+                { w: "မ္ဂှ်ျမပြဲ", r: "မင်္ဂလမပြဲ" },
+                { w: "ခရော်ထဝ်", r: "ခရော်ထဝ်" },
+                { w: "ဒေဝဒတ်", r: "ဒေဝဒတ်" },
+                { w: "မ္စိဟ်", r: "မၞိဟ်" }
+            ];
+
+            fixes.forEach(fix => {
+                t = t.replace(new RegExp(fix.w, "g"), fix.r);
+            });
+
+            // General Mon Fixes
+            t = t
+                .replace(/ဟၞံ/g, "ဟွံ")
+                .replace(/ဟံၞ/g, "ဟွံ")
+                .replace(/တဲ်/g, "တုဲ")
+                .replace(/တဲံ/g, "တုဲ")
+                .replace(/ဒ််/g, "ဒှ်")
+                .replace(/ဒ်/g, "ဒှ်")
+                .replace(/ဟွံကို/g, "ဟွံဂွံ")
+                .replace(/င/g, "ၚ")
+                .replace(/ၺ/g, "ည")
+                .replace(/ဏံ/g, "ဏအ်")
+                .replace(/ရး/g, "ရ။")
+                .replace(/ရႈ/g, "ရ။");
+
+            return t;
         });
 
-        // General Fixes
-        t = t
-            .replace(/ဟၞံ/g, "ဟွံ")
-            .replace(/ဟံၞ/g, "ဟွံ")
-            .replace(/တဲ်/g, "တုဲ")
-            .replace(/တဲံ/g, "တုဲ")
-            .replace(/ဒ််/g, "ဒှ်")
-            .replace(/ဒ်/g, "ဒှ်")
-            .replace(/ကို/g, "ကဵု") // Careful with this one
-            .replace(/ဟွံကို/g, "ဟွံဂွံ")
-            .replace(/င/g, "ၚ")
-            .replace(/ၺ/g, "ည")
-            .replace(/ဏံ/g, "ဏအ်")
-            .replace(/ရး/g, "ရ။")
-            .replace(/ရႈ/g, "ရ။");
-
-        // Filter Garbage Lines
-        return t.split('\n').filter(line => {
-            let clean = line.trim();
-            let monChars = (clean.match(/[က-အ]/g) || []).length;
-            return monChars > 2; // Keep lines with at least 3 Mon chars
-        }).join('\n');
-    }
-
-    // 4. Copy Function
-    function copyText() {
-        const output = document.getElementById('output');
-        output.select();
-        document.execCommand('copy');
-        alert("Copied to Clipboard!");
+        // Filter out empty lines and join
+        return processedLines.filter(l => l !== null).join('\n');
     }
 </script>
 
