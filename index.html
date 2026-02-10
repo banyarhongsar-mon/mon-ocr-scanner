@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mon OCR Ultimate (All-in-One)</title>
+    <title>Mon OCR Ultimate (Fixed)</title>
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
     <style>
         :root { --primary: #b71c1c; --secondary: #1b5e20; --bg: #f5f7fa; }
@@ -53,7 +53,7 @@
     <div class="controls">
         <label class="switch-label">
             <input type="checkbox" id="invert-mode"> 
-            🔧 Enhance 🔧 Enhance Mode
+            🔧 Enhance Mode (သွက် "လိက်အဖြူ / နောက်ခံအစိမ်း")
         </label>
     </div>
 
@@ -239,7 +239,6 @@
             if (s.length === 0) return;
 
             // 2. CLEANER: Remove Emojis & Garbage Symbols
-            // Removes: 😃, 🙏, ©, ®, ™, @, #, $, %, etc.
             s = s.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
             s = s.replace(/[©®™@#$%^&*_\+=<>\\\|~`]/g, ""); 
 
@@ -281,64 +280,6 @@
         const originalText = btn.innerText;
         btn.innerText = "✅ Copied!";
         setTimeout(()=>{ btn.innerText = originalText; }, 2000);
-    }
-</script>
-
-</body>
-</html>
-   { w: "အရေရ်", r: "အရေဝ်" }
-        ];
-
-        let lines = text.split('\n');
-        let processed = [];
-
-        lines.forEach(line => {
-            let s = line.trim();
-            if (s.length === 0) return;
-
-            // B. SMART FILTER: Is this line mostly English?
-            let engChars = (s.match(/[a-zA-Z]/g) || []).length;
-            let monChars = (s.match(/[က-အ]/g) || []).length;
-            
-            // If more English than Mon, keep it AS IS (Don't fix)
-            if (engChars > monChars) {
-                processed.push(s); 
-                return;
-            }
-
-            // C. IF MON -> APPLY FIXES
-            
-            // 1. Dictionary Replace
-            dict.forEach(d => {
-                s = s.replace(new RegExp(d.w, "g"), d.r);
-            });
-
-            // 2. Grammar Rules
-            s = s
-            .replace(/ဟၞံ/g, "ဟွံ").replace(/ဟံၞ/g, "ဟွံ") // Not
-            .replace(/တဲ်/g, "တုဲ").replace(/တဲံ/g, "တုဲ") // Done
-            .replace(/ဒ််/g, "ဒှ်").replace(/ဒ်/g, "ဒှ်")   // Is
-            .replace(/ဟွံကို/g, "ဟွံဂွံ")
-            .replace(/ဏံ/g, "ဏအ်")
-            .replace(/င/g, "ၚ").replace(/ၺ/g, "ည")      // Char fix
-            .replace(/ရး/g, "ရ။").replace(/ရႈ/g, "ရ။")   // Punctuation
-            .replace(/[\[\]\{\}]/g, "")                 // Remove brackets
-            .replace(/\|/g, "");                        // Remove pipes
-
-            // 3. Length Check (Remove tiny garbage)
-            if (s.length > 2) {
-                processed.push(s);
-            }
-        });
-
-        return processed.join('\n');
-    }
-
-    function copyText() {
-        const output = document.getElementById('output');
-        output.select();
-        document.execCommand('copy');
-        alert("Copied to Clipboard!");
     }
 </script>
 
