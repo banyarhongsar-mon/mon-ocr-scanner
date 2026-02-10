@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mon OCR Scanner (Smart Fix)</title>
+    <title>Mon History OCR (Smart Fix)</title>
     <script src='https://unpkg.com/tesseract.js@4.0.2/dist/tesseract.min.js'></script>
     <style>
         :root { 
             --mon-red: #b71c1c; 
             --mon-gold: #fbc02d;
+            --bg-color: #f4f6f8;
         }
         body { 
             font-family: "Pyidaungsu", "Mon3", "Myanmar3", sans-serif; 
-            background-color: #f4f6f8; 
+            background-color: var(--bg-color); 
             padding: 20px; 
             display: flex; 
             justify-content: center; 
@@ -71,7 +72,7 @@
         #copy-btn { background-color: #28a745; color: white; }
         #copy-btn:hover { background-color: #218838; }
 
-        #clear-btn { background-color: #6c757d; color: white; max-width: 100px;}
+        #clear-btn { background-color: #6c757d; color: white; max-width: 80px;}
 
         /* Output Area */
         #output-text { 
@@ -89,7 +90,7 @@
             resize: vertical;
         }
         
-        .status { text-align: center; color: #444; font-weight: bold; margin: 15px 0; height: 20px; }
+        .status { text-align: center; color: #444; font-weight: bold; margin: 15px 0; min-height: 24px; }
         
         /* Progress Bar */
         .progress-bar { 
@@ -128,143 +129,82 @@
 </div>
 
 <script>
+    // --- 1. CORE LOGIC: THE MON FIXER ---
     function fixMonScript(text) {
-    if (!text) return "";
-    let fixed = text;
+        if (!text) return "";
+        let fixed = text;
 
-    // 1. Context-Specific Fixes (Mangala Sutta / Religious Text)
-    const contextFixes = [
-        { w: "ကမ္ပန္ဘား", r: "ကမၠောန်" },
-        { w: "ကမ္ဘောနိ", r: "ကမၠောန်" },
-        { w: "ကမ္ဘှောနိ", r: "ကမၠောန်" },
-        { w: "ကမှှောန်", r: "ကမၠောန်" },
-        { w: "က္ခာနိ", r: "ကမၠောန်" }, // Extreme corruption
-        { w: "အနာကုလာ", r: "အနာကုလာ" },
-        { w: "မ္ဂှ်ျမပြဲ", r: "မင်္ဂလမပြဲ" },
-        { w: "မင်္ဂလမုတ္တမံ", r: "မင်္ဂလမုတ္တမံ" },
-        { w: "တာလျိုၚ်", r: "တာလျိုင်" },
-        { w: "ခရော်ထဝ်", r: "ခရော်ထဝ်" }, // Golden Bowl
-        { w: "ဒေဝဒတ်", r: "ဒေဝဒတ်" },
-        { w: "မ္စိဟ်", r: "မၞိဟ်" } // Human
-    ];
-
-    contextFixes.forEach(item => {
-        let regex = new RegExp(item.w, "g");
-        fixed = fixed.replace(regex, item.r);
-    });
-
-    // 2. Grammar & Particle Fixes (The most common Mon errors)
-    fixed = fixed
-        // Fix "Work" (General Pattern: က + something + ာန်)
-        .replace(/ကမ္[ဘဗ][ာ-၉]+န[ိ်]/g, "ကမၠောန်") 
-        
-        // Fix "Not" (ဟၞံ -> ဟွံ)
-        .replace(/ဟၞံ/g, "ဟွံ")
-        .replace(/ဟံၞ/g, "ဟွံ")
-
-        // Fix "Done/Then" (တဲ် -> တုဲ)
-        .replace(/တဲ်/g, "တုဲ")
-        .replace(/တဲံ/g, "တုဲ")
-
-        // Fix "To/Get" (ကို -> ကဵု or ဂွံ)
-        // Context: "ဟွံဂွံ" (Not get) vs "ကဵုညး" (To person)
-        .replace(/ဟွံကို/g, "ဟွံဂွံ") 
-        .replace(/ညးကိုညး/g, "ညးကဵုညး")
-        .replace(/ကိုဒုဟ်/g, "ကဵုဒုဟ်")
-
-        // Fix standard Myanmar misreads
-        .replace(/င/g, "ၚ") 
-        .replace(/ၺ/g, "ည")
-        .replace(/ဂ်/g, "ဂှ်")
-        .replace(/ဒ််/g, "ဒှ်")  // Very common in your text
-        .replace(/ဏံ/g, "ဏအ်")
-        .replace(/ရး/g, "ရ။")  // End of sentence
-        .replace(/ရႈ/g, "ရ။")
-        .replace(/။။/g, "။");
-
-    // 3. Garbage Cleanup (Remove numbers/symbols causing noise)
-    const lines = fixed.split('\n');
-    const cleanLines = lines.map(line => {
-        // Remove patterns like "3) .&1189"
-        return line.replace(/^[0-9\)\.\&\s]+/, "");
-    }).filter(line => {
-        let s = line.trim();
-        // Keep line if it has at least 3 Mon characters
-        let monChars = (s.match(/[က-အ]/g) || []).length;
-        return monChars > 3;
-    });
-
-    return cleanLines.join('\n');
-}
-
-        // Dictionary: Common Tesseract Errors -> Correct Mon Words
-        // Note: Tesseract 'mya' often mistakes Mon 'ဍ' for 'ချ' or 'ဗ'
+        // 1. Context Dictionary (Mangala Sutta / History)
         const dictionary = [
-            // Major Fixes (Locations & Titles)
-            { w: "ချၚ်သေံထာဲ", r: "ဍုင်သေံထာဲ" }, 
-            { w: "ချၚ်သေံ", r: "ဍုင်သေံ" },
-            { w: "ချၚ်", r: "ဍုင်" }, // Very common error
-            { w: "ဗၞာ", r: "ဗၟာ" }, 
-            { w: "ဒဲချၚ်", r: "ဒၞာဲဍုင်" },
-            { w: "သမို", r: "သဓီု" }, 
-            { w: "ခေတ်ဒၞါရ", r: "ခေတ်ဒွါရ" },
+            // WORK (The most common error in your text)
+            { w: "ကမ္ပန္ဘား", r: "ကမၠောန်" },
+            { w: "ကမ္ဘောနိ", r: "ကမၠောန်" },
+            { w: "ကမ္ဘှောနိ", r: "ကမၠောန်" },
+            { w: "ကမှှောန်", r: "ကမၠောန်" },
+            { w: "က္ခာနိ", r: "ကမၠောန်" },
 
-            // Common Vocab
-            { w: "အရေရ်", r: "အရေဝ်" }, 
-            { w: "တဲ်", r: "တ္ၚဲ" },
-            { w: "လဵာန်", r: "လောန်" }, 
-            { w: "သှာံ", r: "သၞာံ" },
-            { w: "စိုတ်", r: "စိုပ်" }, 
-            { w: "လၞီစ", r: "လွဳစ" }, 
-            { w: "လ္စုဟ်", r: "လၟုဟ်" }, 
-            { w: "လွုဟ်", r: "လၟုဟ်" },
-            { w: "တှညး", r: "တၠညး" }, 
-            { w: "သၞိုၚ်", r: "သၟိင်" },
-            { w: "လိက်ကြံနူ", r: "လိက်ကြဴနူ" }, 
-            { w: "မန်တၞိ", r: "မန်တၟိ" },
-            { w: "ဂၞံရ", r: "ဂွံရ" }
+            // KEYWORDS
+            { w: "အနာကုလာ", r: "အနာကုလာ" },
+            { w: "မ္ဂှ်ျမပြဲ", r: "မင်္ဂလမပြဲ" },
+            { w: "မင်္ဂလမုတ္တမံ", r: "မင်္ဂလမုတ္တမံ" },
+            { w: "တာလျိုၚ်", r: "တာလျိုင်" },
+            { w: "ခရော်ထဝ်", r: "ခရော်ထဝ်" }, // Golden Bowl
+            { w: "ဒေဝဒတ်", r: "ဒေဝဒတ်" },
+            { w: "မ္စိဟ်", r: "မၞိဟ်" }, // Human
+            { w: "ချၚ်သေံထာဲ", r: "ဍုင်သေံထာဲ" }, 
+            { w: "ချၚ်", r: "ဍုင်" }
         ];
 
         // Apply Dictionary Replacements
         dictionary.forEach(item => {
-            // Using Regex to replace all occurrences globally
             let regex = new RegExp(item.w, "g");
             fixed = fixed.replace(regex, item.r);
         });
 
-        // --- 2. CHARACTER & ENCODING CLEANUP ---
-        
+        // 2. Grammar & Particle Cleanups
         fixed = fixed
-            // Fix Common Character mistypes
-            .replace(/င/g, "ၚ")  // Burmese Nga -> Mon Nga
-            .replace(/ၺ/g, "ည")  // Nya correction
-            .replace(/ၡ/g, "ၝ")  // Sha -> Mon Jha
-            .replace(/ၢ/g, "ၟ")   // Shan vowel -> Mon Medial Ma (Careful with this one)
-            //.replace(/ွ/g, "ၞ")  // WARNING: Disabled this. It breaks 'ကွာန်' (Village). Only enable if inputs are severely corrupted.
-            
-            // Fix Spacing/Punctuation
-            .replace(/ဂ်/g, "ဂှ်")
-            .replace(/့/g, "်")
-            .replace(/ဲံ/g, "ဲ")
-            .replace(/ဴ/g, "ဵ")
-            .replace(/ျ၈/g, "") // Remove garbage
-            .replace(/\[/g, "").replace(/\]/g, "")
-            .replace(/ရႈ/g, "ရ။").replace(/ရ။။/g, "ရ။");
+            // Fix "Not" (ဟၞံ -> ဟွံ)
+            .replace(/ဟၞံ/g, "ဟွံ")
+            .replace(/ဟံၞ/g, "ဟွံ")
+            .replace(/ဟၞ/g, "ဟွံ") // Dangerous but needed for your text
 
-        // --- 3. GARBAGE LINE FILTER ---
+            // Fix "Done/Then" (တဲ် -> တုဲ)
+            .replace(/တဲ်/g, "တုဲ")
+            .replace(/တဲံ/g, "တုဲ")
+
+            // Fix "Is" (ဒ်် -> ဒှ်)
+            .replace(/ဒ််/g, "ဒှ်")
+            .replace(/ဒ်/g, "ဒှ်")
+
+            // Fix "To/Get"
+            .replace(/ဟွံကို/g, "ဟွံဂွံ") 
+            .replace(/ညးကိုညး/g, "ညးကဵုညး")
+            .replace(/ကိုဒုဟ်/g, "ကဵုဒုဟ်")
+
+            // General Character Fixes
+            .replace(/င/g, "ၚ")  
+            .replace(/ၺ/g, "ည")  
+            .replace(/ဂ်/g, "ဂှ်")
+            .replace(/ဏံ/g, "ဏအ်")
+            .replace(/ရး/g, "ရ။")
+            .replace(/ရႈ/g, "ရ။")
+            .replace(/။။/g, "။");
+
+        // 3. Garbage Filter
         const lines = fixed.split('\n');
-        const cleanLines = lines.filter(line => {
+        const cleanLines = lines.map(line => {
+            // Remove random start numbers like "3) .&1189"
+            return line.replace(/^[\d\)\.\&\s]+/, "");
+        }).filter(line => {
             let s = line.trim();
             if (s.length === 0) return false;
             
-            // Count valid Myanmar/Mon characters
+            // Count valid Mon/Myanmar chars
             let validMonChars = (s.match(/[က-အ]/g) || []).length;
-            let numbers = (s.match(/[0-9၀-၉]/g) || []).length;
             
-            // Reject lines that are mostly numbers or very short garbage
-            if (validMonChars < 2 && numbers > 2) return false; // Likely page numbers
-            if (s.length < 3 && validMonChars < 2) return false; // Stray marks
-
+            // Reject lines that are mostly garbage/numbers
+            if (validMonChars < 2) return false; 
+            
             return true;
         });
 
@@ -292,3 +232,70 @@
         const output = document.getElementById('output-text');
         const btn = document.getElementById('scan-btn');
         const copyBtn = document.getElementById('copy-btn');
+        const progressBar = document.getElementById('progress-bar');
+
+        if (!file) { alert("Please select an image first!"); return; }
+
+        btn.disabled = true;
+        status.innerText = "Initializing Tesseract Engine...";
+        output.value = "";
+        
+        try {
+            // Using 'mya' (Myanmar) language pack
+            const { data: { text } } = await Tesseract.recognize(file, 'mya', {
+                logger: m => { 
+                    if(m.status === 'recognizing text') {
+                        let pct = Math.round(m.progress * 100);
+                        status.innerText = `⏳ Scanning... ${pct}%`;
+                        progressBar.style.width = pct + "%";
+                    } else {
+                        status.innerText = `⚙️ ${m.status}`;
+                    }
+                }
+            });
+            
+            status.innerText = "🧹 Cleaning & Fixing Text...";
+            
+            // Small delay to allow UI to update
+            setTimeout(() => {
+                const result = fixMonScript(text);
+                output.value = result;
+                status.innerText = "✅ Done! Text Fixed.";
+                btn.disabled = false;
+                copyBtn.disabled = false;
+            }, 500);
+
+        } catch (err) {
+            status.innerText = "❌ Error: " + err.message;
+            console.error(err);
+            btn.disabled = false;
+        }
+    }
+
+    function copyToClipboard() {
+        const output = document.getElementById("output-text");
+        if(!output.value) return;
+        
+        navigator.clipboard.writeText(output.value).then(() => {
+            const btn = document.getElementById("copy-btn");
+            const originalText = btn.innerText;
+            btn.innerText = "✅ Copied!";
+            
+            setTimeout(() => { 
+                btn.innerText = originalText; 
+            }, 2000);
+        });
+    }
+
+    function clearAll() {
+        document.getElementById('uploader').value = "";
+        document.getElementById('preview-image').style.display = 'none';
+        document.getElementById('output-text').value = "";
+        document.getElementById('status').innerText = "Waiting for image...";
+        document.getElementById('progress-bar').style.width = "0%";
+        document.getElementById('copy-btn').disabled = true;
+    }
+</script>
+
+</body>
+</html>
