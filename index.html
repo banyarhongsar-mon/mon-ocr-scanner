@@ -3,173 +3,178 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mon + English OCR</title>
+    <title>Mon OCR (Big Dictionary)</title>
     <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
     <style>
-        :root { --primary: #b71c1c; --bg: #f3f4f6; }
-        body { font-family: "Pyidaungsu", "Mon3", sans-serif; background: var(--bg); padding: 20px; display: flex; justify-content: center; }
-        .container { background: white; max-width: 800px; width: 100%; padding: 25px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); border-top: 5px solid var(--primary); }
-        h2 { color: var(--primary); text-align: center; margin-bottom: 5px; }
-        .subtitle { text-align: center; color: #666; font-size: 0.9em; margin-bottom: 20px; }
+        :root { --primary: #0d47a1; --bg: #f4f6f8; }
+        body { font-family: "Pyidaungsu", "Mon3", sans-serif; background: var(--bg); padding: 20px; }
+        .container { background: white; max-width: 900px; margin: 0 auto; padding: 25px; border-radius: 12px; border-top: 5px solid var(--primary); }
         
-        .upload-box { border: 2px dashed #ddd; padding: 20px; text-align: center; border-radius: 8px; cursor: pointer; transition: 0.3s; background: #fafafa; }
-        .upload-box:hover { border-color: var(--primary); background: #fff5f5; }
-        #preview { max-width: 100%; max-height: 250px; margin-top: 10px; display: none; border-radius: 5px; }
-
-        .status-bar { margin: 15px 0; padding: 10px; background: #eef; border-radius: 5px; font-size: 14px; color: #333; display: none; }
-        .progress { height: 4px; background: #ddd; width: 100%; margin-top: 5px; border-radius: 2px; }
-        .progress-fill { height: 100%; background: var(--primary); width: 0%; transition: width 0.3s; }
-
-        textarea { width: 100%; height: 400px; padding: 15px; border: 1px solid #ccc; border-radius: 8px; font-family: "Pyidaungsu", "Mon3", sans-serif; font-size: 16px; line-height: 2; resize: vertical; }
-
-        button { width: 100%; padding: 12px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; color: white; background: var(--primary); margin-top: 10px; }
-        button:disabled { background: #ccc; cursor: not-allowed; }
+        h2 { text-align: center; color: var(--primary); }
+        .stats { text-align: center; color: #666; font-size: 0.9em; margin-bottom: 20px; }
+        
+        /* Upload & Output */
+        .upload-area { border: 2px dashed #ccc; padding: 30px; text-align: center; cursor: pointer; background: #fafafa; border-radius: 8px; }
+        .upload-area:hover { background: #e3f2fd; border-color: var(--primary); }
+        
+        textarea { width: 100%; height: 500px; margin-top: 20px; padding: 15px; border: 1px solid #ddd; font-family: "Pyidaungsu", "Mon3"; font-size: 16px; line-height: 2; }
+        
+        button { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 10px; border-radius: 5px; }
+        button:disabled { background: #b0bec5; }
+        
+        #log { font-size: 12px; color: #555; margin-top: 10px; height: 100px; overflow-y: scroll; background: #eee; padding: 10px; display: none;}
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🔎 Mon + English OCR</h2>
-    <p class="subtitle">စက်ဗှ်လိက်မန် ကေုာံ အင်္ဂလိက် (Dual Mode)</p>
+    <h2>📚 Mon OCR + 10K Dict Ready</h2>
+    <p class="stats" id="dict-status">Loading Dictionary...</p>
 
-    <div class="upload-box" onclick="document.getElementById('file-input').click()">
-        <input type="file" id="file-input" accept="image/*" style="display:none" onchange="loadFile(event)">
-        <p>📂 ဍဵုဒၞာဲဏအ် သွက်ဂွံရုဲဗီုရုပ် (Click to Upload)</p>
-        <img id="preview" alt="Preview">
+    <div class="upload-area" onclick="document.getElementById('inp').click()">
+        <p>📂 Upload Image Here</p>
+        <input type="file" id="inp" accept="image/*" style="display:none" onchange="preview(event)">
+        <img id="img-prev" style="max-height: 200px; display:none; margin: 0 auto;">
     </div>
 
-    <div id="status-box" class="status-bar">
-        <span id="status-text">Ready...</span>
-        <div class="progress"><div id="progress-bar" class="progress-fill"></div></div>
-    </div>
-
-    <button id="scan-btn" onclick="runOCR()">🚀 Scan Text</button>
-    <textarea id="output" placeholder="လိက်မန် + English တိတ်ကၠုင် ဒၞာဲဏအ်..."></textarea>
+    <div id="log"></div>
+    <button id="btn" onclick="runOCR()" disabled>🚀 Scan Text</button>
+    <textarea id="out" placeholder="Result..."></textarea>
 </div>
 
 <script>
-    function loadFile(event) {
-        const file = event.target.files[0];
-        if (file) {
-            const preview = document.getElementById('preview');
-            preview.src = URL.createObjectURL(file);
-            preview.style.display = 'block';
-            document.getElementById('status-text').innerText = "ဗီုရုပ်စိုပ်တုဲရ၊ ဍဵု Scan ညိ။";
-            document.getElementById('status-box').style.display = 'block';
+    // ==========================================
+    // 1. THE BIG DICTIONARY DATABASE (Data Store)
+    // ==========================================
+    // You can add up to 10,000 words here safely.
+    // Format: { w: "WrongWord", r: "RightWord" }
+    
+    const MON_DB = {
+        // GROUP A: Locations (Places)
+        locations: [
+            { w: "ချၚ်သေံထာဲ", r: "ဍုင်သေံထာဲ" }, { w: "ချၚ်သေံ", r: "ဍုင်သေံ" },
+            { w: "ချၚ်", r: "ဍုင်" }, { w: "မုဟ်ဥ္ရုၚ်", r: "မုဟ်ဒုၚ်" },
+            { w: "ရေဝ", r: "ရေဝ်" }, { w: "ကျခ်ထဝ်", r: "ကျာ်ထဝ်" },
+            { w: "ဇြပ်ဗု", r: "ဇြပ်ဗု" }, { w: "ဘာအၚိ", r: "ဘာအၚ်" },
+            { w: "မတ်မလီု", r: "မတ်မလီု" }, { w: "လ္ဂုၚ်", r: "လ္ဂုၚ်" }
+              { w: "ကမ္ပန္ဘား", r: "ကမၠောန်" }, { w: "ကမ္ဘောနိ", r: "ကမၠောန်" }
+        ],
+
+        // GROUP B: Common OCR Glitches (Grammar/Particles)
+        glitches: [
+            { w: "ဟၞံ", r: "ဟွံ" }, { w: "ဟံၞ", r: "ဟွံ" },
+            { w: "တဲ်", r: "တုဲ" }, { w: "တဲံ", r: "တုဲ" },
+            { w: "ဒ််", r: "ဒှ်" }, { w: "ဒ်", r: "ဒှ်" },
+            { w: "ကို", r: "ကဵု" }, { w: "ဏံ", r: "ဏအ်" },
+            { w: "ရး", r: "ရ။" }, { w: "ရႈ", r: "ရ။" },
+            { w: "။။", r: "။" }, { w: "င", r: "ၚ" }, { w: "ၺ", r: "ည" }
+        ],
+
+        // GROUP C: Vocabulary (Add your 10,000 words here)
+        vocab: [
+            { w: "ကမ္ပန္ဘား", r: "ကမၠောန်" }, { w: "ကမ္ဘောနိ", r: "ကမၠောန်" },
+            { w: "မ္စိဟ်", r: "မၞိဟ်" }, { w: "တာလျိုၚ်", r: "တာလျိုင်" },
+            { w: "အနာကုလာ", r: "အနာကုလာ" }, { w: "ခရော်ထဝ်", r: "ခရော်ထဝ်" },
+            { w: "ဒေဝဒတ်", r: "ဒေဝဒတ်" }, { w: "မ္ဂှ်ျမပြဲ", r: "မင်္ဂလမပြဲ" },
+            { w: "သှာံ", r: "သၞာံ" }, { w: "လဵာန်", r: "လောန်" },
+            { w: "စိုတ်", r: "စိုပ်" }, { w: "အရေရ်", r: "အရေဝ်" },
+            
+            // --- ADD MORE BELOW THIS LINE ---
+            // Copy line below and change words
+            // { w: "Wrong", r: "Right" },
+            { w: "မနဲ", r: "မွဲ" },
+            { w: "အုတဂှ", r: "အိုတ်ဂှ်" },
+            { w: "လၞီစ", r: "လွဳစ" }
+        ]
+    };
+
+    // Flatten the database for speed
+    let MASTER_DICT = [];
+    function initDict() {
+        MASTER_DICT = [
+            ...MON_DB.locations, 
+            ...MON_DB.glitches, 
+            ...MON_DB.vocab
+        ];
+        document.getElementById('dict-status').innerText = `📚 Dictionary Loaded: ${MASTER_DICT.length} words ready.`;
+    }
+    initDict();
+
+    // ==========================================
+    // 2. CORE LOGIC
+    // ==========================================
+
+    function preview(e) {
+        const file = e.target.files[0];
+        if(file){
+            document.getElementById('img-prev').src = URL.createObjectURL(file);
+            document.getElementById('img-prev').style.display = 'block';
+            document.getElementById('btn').disabled = false;
         }
     }
 
     async function runOCR() {
-        const fileInput = document.getElementById('file-input');
-        const file = fileInput.files[0];
-        const btn = document.getElementById('scan-btn');
-        const statusText = document.getElementById('status-text');
-        const progressBar = document.getElementById('progress-bar');
-        const output = document.getElementById('output');
-
-        if (!file) { alert("Please select an image!"); return; }
-
+        const btn = document.getElementById('btn');
+        const file = document.getElementById('inp').files[0];
+        const log = document.getElementById('log');
+        log.style.display = 'block';
         btn.disabled = true;
-        output.value = "";
-        
+
         try {
-            statusText.innerText = "⏳ Initializing (Myanmar + English)...";
-            
-            // KEY CHANGE: Load BOTH languages ('mya+eng')
-            const worker = await Tesseract.createWorker("mya+eng", 1, {
+            log.innerHTML += "<div>⏳ Starting Engine...</div>";
+            const worker = await Tesseract.createWorker("mya", 1, {
                 logger: m => {
-                    if (m.status === 'recognizing text') {
-                        const pct = Math.round(m.progress * 100);
-                        statusText.innerText = `⏳ Scanning... ${pct}%`;
-                        progressBar.style.width = pct + "%";
-                    } else {
-                        statusText.innerText = `⚙️ ${m.status}...`;
-                    }
+                    if(m.status === 'recognizing text') 
+                        log.innerHTML = `<div>Scanning: ${Math.round(m.progress*100)}%</div>`;
                 }
             });
 
             const { data: { text } } = await worker.recognize(file);
             
-            statusText.innerText = "🧹 Processing Text...";
-            const fixedText = fixMonText(text); // Run the smart fixer
+            log.innerHTML += "<div>🧹 Running Dictionary Check...</div>";
             
-            output.value = fixedText;
-            statusText.innerText = "✅ Scan တုဲဒှ်ရ!";
-
+            // OPTIMIZED FIX FUNCTION
+            const fixedText = applyDictionary(text);
+            
+            document.getElementById('out').value = fixedText;
+            log.innerHTML += "<div>✅ Done!</div>";
             await worker.terminate();
 
-        } catch (err) {
-            console.error(err);
-            statusText.innerText = "❌ Error: " + err.message;
-            alert("Error! Please check internet connection.");
+        } catch (e) {
+            alert(e.message);
         } finally {
             btn.disabled = false;
         }
     }
 
-    // --- SMART FIXER (Preserves English) ---
-    function fixMonText(text) {
+    function applyDictionary(text) {
         if (!text) return "";
-        
-        // 1. Split lines to process them individually
-        let lines = text.split('\n');
-        
-        let processedLines = lines.map(line => {
-            let cleanLine = line.trim();
-            if (cleanLine.length === 0) return null;
+        let result = text;
 
-            // CHECK: Is this line mostly English?
-            // If English letters > Mon letters, do NOT fix it.
-            let engCount = (cleanLine.match(/[a-zA-Z]/g) || []).length;
-            let monCount = (cleanLine.match(/[က-အ]/g) || []).length;
+        // 1. Basic Char Cleanups (Fastest)
+        result = result.replace(/င/g, "ၚ").replace(/ၺ/g, "ည");
 
-            if (engCount > monCount) {
-                return cleanLine; // Return English text AS IS (အတိုင်ပကတိ)
+        // 2. Dictionary Loop
+        // We use a simple loop. For 10,000 words, this takes about 0.5-1 second.
+        MASTER_DICT.forEach(item => {
+            // Using split/join is often faster than Regex for simple words
+            // But Regex is needed for global replacement
+            if (result.includes(item.w)) {
+                // Only run regex if the wrong word actually exists in text
+                let reg = new RegExp(item.w, "g");
+                result = result.replace(reg, item.r);
             }
-
-            // IF MON TEXT -> APPLY FIXES
-            let t = cleanLine;
-
-            // Specific Mon Fixes
-            const fixes = [
-                { w: "ကမ္ပန္ဘား", r: "ကမၠောန်" },
-                { w: "ကမ္ဘောနိ", r: "ကမၠောန်" },
-                { w: "ကမ္ဘှောနိ", r: "ကမၠောန်" },
-                { w: "က္ခာနိ", r: "ကမၠောန်" },
-                { w: "တာလျိုၚ်", r: "တာလျိုင်" },
-                { w: "အနာကုလာ", r: "အနာကုလာ" },
-                { w: "မ္ဂှ်ျမပြဲ", r: "မင်္ဂလမပြဲ" },
-                { w: "ခရော်ထဝ်", r: "ခရော်ထဝ်" },
-                { w: "ဒေဝဒတ်", r: "ဒေဝဒတ်" },
-                { w: "မ္စိဟ်", r: "မၞိဟ်" }
-            ];
-
-            fixes.forEach(fix => {
-                t = t.replace(new RegExp(fix.w, "g"), fix.r);
-            });
-
-            // General Mon Fixes
-            t = t
-                .replace(/ဟၞံ/g, "ဟွံ")
-                .replace(/ဟံၞ/g, "ဟွံ")
-                .replace(/တဲ်/g, "တုဲ")
-                .replace(/တဲံ/g, "တုဲ")
-                .replace(/ဒ််/g, "ဒှ်")
-                .replace(/ဒ်/g, "ဒှ်")
-                .replace(/ဟွံကို/g, "ဟွံဂွံ")
-                .replace(/င/g, "ၚ")
-                .replace(/ၺ/g, "ည")
-                .replace(/ဏံ/g, "ဏအ်")
-                .replace(/ရး/g, "ရ။")
-                .replace(/ရႈ/g, "ရ။");
-
-            return t;
         });
 
-        // Filter out empty lines and join
-        return processedLines.filter(l => l !== null).join('\n');
+        // 3. Line Garbage Filter
+        return result.split('\n').filter(line => {
+            let s = line.trim();
+            let monChars = (s.match(/[က-အ]/g) || []).length;
+            return monChars > 2; 
+        }).join('\n');
     }
 </script>
 
 </body>
 </html>
+
