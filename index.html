@@ -3,297 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mon History OCR (Smart Fix)</title>
-    <script src='https://unpkg.com/tesseract.js@4.0.2/dist/tesseract.min.js'></script>
+    <title>Mon OCR (Debug Version)</title>
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
     <style>
-        :root { 
-            --mon-red: #b71c1c; 
-            --mon-gold: #fbc02d;
-            --bg-color: #f4f6f8;
+        body { font-family: "Pyidaungsu", sans-serif; padding: 20px; background: #f4f4f4; }
+        .container { max-width: 700px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; }
+        h2 { color: #b71c1c; text-align: center; }
+        textarea { width: 100%; height: 300px; padding: 10px; margin-top: 10px; font-size: 16px; }
+        #log-area { 
+            background: #000; color: #0f0; 
+            font-family: monospace; padding: 10px; 
+            height: 150px; overflow-y: scroll; 
+            margin-top: 20px; font-size: 12px;
         }
-        body { 
-            font-family: "Pyidaungsu", "Mon3", "Myanmar3", sans-serif; 
-            background-color: var(--bg-color); 
-            padding: 20px; 
-            display: flex; 
-            justify-content: center; 
-        }
-        .container { 
-            background: white; 
-            max-width: 800px; 
-            width: 100%; 
-            padding: 30px; 
-            border-radius: 15px; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
-            border-top: 6px solid var(--mon-red); 
-        }
-        h2 { color: var(--mon-red); text-align: center; margin-bottom: 5px; }
-        .sub-title { text-align: center; color: #666; font-size: 0.9em; margin-bottom: 25px; }
-        
-        /* Upload Area */
-        .upload-section { 
-            border: 2px dashed #ccc; 
-            padding: 30px; 
-            text-align: center; 
-            border-radius: 10px; 
-            margin-bottom: 20px; 
-            background: #fafafa; 
-            cursor: pointer; 
-            transition: 0.2s;
-        }
-        .upload-section:hover { background: #eee; border-color: var(--mon-red); }
-        .upload-icon { font-size: 40px; margin-bottom: 10px; display: block; }
-        #preview-image { 
-            max-width: 100%; 
-            max-height: 250px; 
-            margin-top: 15px; 
-            border-radius: 5px; 
-            display: none; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        }
-
-        /* Buttons */
-        .btn-group { display: flex; gap: 10px; margin-bottom: 15px; }
-        button { 
-            flex: 1; 
-            padding: 12px; 
-            border: none; 
-            border-radius: 8px; 
-            font-size: 16px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            transition: 0.3s; 
-            font-family: "Pyidaungsu", sans-serif;
-        }
-        #scan-btn { background-color: var(--mon-red); color: white; }
-        #scan-btn:hover { background-color: #8e1515; }
-        #scan-btn:disabled { background-color: #ccc; cursor: not-allowed; }
-        
-        #copy-btn { background-color: #28a745; color: white; }
-        #copy-btn:hover { background-color: #218838; }
-
-        #clear-btn { background-color: #6c757d; color: white; max-width: 80px;}
-
-        /* Output Area */
-        #output-text { 
-            width: 100%; 
-            height: 500px; 
-            padding: 20px; 
-            font-size: 18px; 
-            border: 1px solid #ddd; 
-            border-radius: 8px; 
-            line-height: 2.2; 
-            font-family: "Pyidaungsu", "Mon3", serif; 
-            white-space: pre-wrap; 
-            background-color: #fff;
-            color: #333;
-            resize: vertical;
-        }
-        
-        .status { text-align: center; color: #444; font-weight: bold; margin: 15px 0; min-height: 24px; }
-        
-        /* Progress Bar */
-        .progress-bar { 
-            height: 5px; 
-            width: 0%; 
-            background-color: var(--mon-red); 
-            transition: width 0.3s; 
-            margin-bottom: 15px;
-            border-radius: 2px;
-        }
+        button { padding: 15px; width: 100%; background: #b71c1c; color: white; border: none; font-size: 18px; cursor: pointer; margin-top: 10px; }
+        button:disabled { background: #ccc; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🔎 Mon History OCR</h2>
-    <p class="sub-title">စက်ဗှ်လိက်မန် (Auto-Correction System)</p>
+    <h2>🔎 Mon OCR (Debug Mode)</h2>
+    <input type="file" id="uploader" accept="image/*">
+    <button id="scan-btn" onclick="runOCR()">🚀 SCAN NOW</button>
     
-    <div class="upload-section" onclick="document.getElementById('uploader').click()">
-        <span class="upload-icon">📂</span>
-        <input type="file" id="uploader" accept="image/*" onchange="previewImage()" style="display:none">
-        <p><strong>ဍဵုဒၞာဲဏအ်</strong> သွက်ဂွံရုဲဗီုရုပ် (Click to Upload)</p>
-        <img id="preview-image" alt="Preview">
-    </div>
-
-    <div class="progress-bar" id="progress-bar"></div>
-    <p id="status" class="status">Waiting for image...</p>
-
-    <div class="btn-group">
-        <button id="scan-btn" onclick="performOCR()">🚀 Scan Text</button>
-        <button id="copy-btn" onclick="copyToClipboard()" disabled>📋 Copy</button>
-        <button id="clear-btn" onclick="clearAll()">❌</button>
-    </div>
+    <h3>Output (လိက်တိတ်ကၠုင်):</h3>
+    <textarea id="output"></textarea>
     
-    <textarea id="output-text" placeholder="လိက်မန် သ္အးသ္အးဇ္ၚးဇ္ၚး တိတ်ကၠုင်ဒၞာဲဏအ်ရ..."></textarea>
+    <h3>System Log (စၟဳစၟတ် Error):</h3>
+    <div id="log-area">Ready...</div>
 </div>
 
 <script>
-    // --- 1. CORE LOGIC: THE MON FIXER ---
-    function fixMonScript(text) {
-        if (!text) return "";
-        let fixed = text;
-
-        // 1. Context Dictionary (Mangala Sutta / History)
-        const dictionary = [
-            // WORK (The most common error in your text)
-            { w: "ကမ္ပန္ဘား", r: "ကမၠောန်" },
-            { w: "ကမ္ဘောနိ", r: "ကမၠောန်" },
-            { w: "ကမ္ဘှောနိ", r: "ကမၠောန်" },
-            { w: "ကမှှောန်", r: "ကမၠောန်" },
-            { w: "က္ခာနိ", r: "ကမၠောန်" },
-
-            // KEYWORDS
-            { w: "အနာကုလာ", r: "အနာကုလာ" },
-            { w: "မ္ဂှ်ျမပြဲ", r: "မင်္ဂလမပြဲ" },
-            { w: "မင်္ဂလမုတ္တမံ", r: "မင်္ဂလမုတ္တမံ" },
-            { w: "တာလျိုၚ်", r: "တာလျိုင်" },
-            { w: "ခရော်ထဝ်", r: "ခရော်ထဝ်" }, // Golden Bowl
-            { w: "ဒေဝဒတ်", r: "ဒေဝဒတ်" },
-            { w: "မ္စိဟ်", r: "မၞိဟ်" }, // Human
-            { w: "ချၚ်သေံထာဲ", r: "ဍုင်သေံထာဲ" }, 
-            { w: "ချၚ်", r: "ဍုင်" }
-        ];
-
-        // Apply Dictionary Replacements
-        dictionary.forEach(item => {
-            let regex = new RegExp(item.w, "g");
-            fixed = fixed.replace(regex, item.r);
-        });
-
-        // 2. Grammar & Particle Cleanups
-        fixed = fixed
-            // Fix "Not" (ဟၞံ -> ဟွံ)
-            .replace(/ဟၞံ/g, "ဟွံ")
-            .replace(/ဟံၞ/g, "ဟွံ")
-            .replace(/ဟၞ/g, "ဟွံ") // Dangerous but needed for your text
-
-            // Fix "Done/Then" (တဲ် -> တုဲ)
-            .replace(/တဲ်/g, "တုဲ")
-            .replace(/တဲံ/g, "တုဲ")
-
-            // Fix "Is" (ဒ်် -> ဒှ်)
-            .replace(/ဒ််/g, "ဒှ်")
-            .replace(/ဒ်/g, "ဒှ်")
-
-            // Fix "To/Get"
-            .replace(/ဟွံကို/g, "ဟွံဂွံ") 
-            .replace(/ညးကိုညး/g, "ညးကဵုညး")
-            .replace(/ကိုဒုဟ်/g, "ကဵုဒုဟ်")
-
-            // General Character Fixes
-            .replace(/င/g, "ၚ")  
-            .replace(/ၺ/g, "ည")  
-            .replace(/ဂ်/g, "ဂှ်")
-            .replace(/ဏံ/g, "ဏအ်")
-            .replace(/ရး/g, "ရ။")
-            .replace(/ရႈ/g, "ရ။")
-            .replace(/။။/g, "။");
-
-        // 3. Garbage Filter
-        const lines = fixed.split('\n');
-        const cleanLines = lines.map(line => {
-            // Remove random start numbers like "3) .&1189"
-            return line.replace(/^[\d\)\.\&\s]+/, "");
-        }).filter(line => {
-            let s = line.trim();
-            if (s.length === 0) return false;
-            
-            // Count valid Mon/Myanmar chars
-            let validMonChars = (s.match(/[က-အ]/g) || []).length;
-            
-            // Reject lines that are mostly garbage/numbers
-            if (validMonChars < 2) return false; 
-            
-            return true;
-        });
-
-        return cleanLines.join('\n');
+    function log(msg) {
+        const logArea = document.getElementById('log-area');
+        logArea.innerHTML += `<div>> ${msg}</div>`;
+        logArea.scrollTop = logArea.scrollHeight;
     }
 
-    // --- UI FUNCTIONS ---
-
-    function previewImage() {
+    async function runOCR() {
         const file = document.getElementById('uploader').files[0];
-        const preview = document.getElementById('preview-image');
-        const status = document.getElementById('status');
+        if (!file) { alert("Please select a file"); return; }
         
-        if (file) {
-            preview.style.display = 'block';
-            preview.src = URL.createObjectURL(file);
-            status.innerText = "Image Loaded. Ready to Scan.";
-            document.getElementById('progress-bar').style.width = "0%";
-        }
-    }
-
-    async function performOCR() {
-        const file = document.getElementById('uploader').files[0];
-        const status = document.getElementById('status');
-        const output = document.getElementById('output-text');
         const btn = document.getElementById('scan-btn');
-        const copyBtn = document.getElementById('copy-btn');
-        const progressBar = document.getElementById('progress-bar');
-
-        if (!file) { alert("Please select an image first!"); return; }
-
         btn.disabled = true;
-        status.innerText = "Initializing Tesseract Engine...";
-        output.value = "";
-        
+        log("Initializing Tesseract...");
+
         try {
-            // Using 'mya' (Myanmar) language pack
-            const { data: { text } } = await Tesseract.recognize(file, 'mya', {
-                logger: m => { 
-                    if(m.status === 'recognizing text') {
-                        let pct = Math.round(m.progress * 100);
-                        status.innerText = `⏳ Scanning... ${pct}%`;
-                        progressBar.style.width = pct + "%";
-                    } else {
-                        status.innerText = `⚙️ ${m.status}`;
-                    }
-                }
+            // Create worker with specific logger
+            const worker = await Tesseract.createWorker("mya", 1, {
+                logger: m => log(`${m.status}: ${Math.round(m.progress * 100)}%`)
             });
             
-            status.innerText = "🧹 Cleaning & Fixing Text...";
+            log("Worker created. Recognizing...");
             
-            // Small delay to allow UI to update
-            setTimeout(() => {
-                const result = fixMonScript(text);
-                output.value = result;
-                status.innerText = "✅ Done! Text Fixed.";
-                btn.disabled = false;
-                copyBtn.disabled = false;
-            }, 500);
+            const { data: { text } } = await worker.recognize(file);
+            log("Recognition Complete!");
+            
+            // --- YOUR MON FIX LOGIC ---
+            let fixed = text
+                .replace(/ကမ္ပန္ဘား/g, "ကမၠောန်")
+                .replace(/ကမ္ဘောနိ/g, "ကမၠောန်")
+                .replace(/ဟၞံ/g, "ဟွံ")
+                .replace(/တဲ်/g, "တုဲ")
+                .replace(/ဒ််/g, "ဒှ်");
+            // --------------------------
 
-        } catch (err) {
-            status.innerText = "❌ Error: " + err.message;
-            console.error(err);
+            document.getElementById('output').value = fixed;
+            await worker.terminate();
+
+        } catch (error) {
+            log("❌ ERROR: " + error.message);
+            alert("Error: " + error.message + "\n(Check internet or CORS)");
+        } finally {
             btn.disabled = false;
         }
-    }
-
-    function copyToClipboard() {
-        const output = document.getElementById("output-text");
-        if(!output.value) return;
-        
-        navigator.clipboard.writeText(output.value).then(() => {
-            const btn = document.getElementById("copy-btn");
-            const originalText = btn.innerText;
-            btn.innerText = "✅ Copied!";
-            
-            setTimeout(() => { 
-                btn.innerText = originalText; 
-            }, 2000);
-        });
-    }
-
-    function clearAll() {
-        document.getElementById('uploader').value = "";
-        document.getElementById('preview-image').style.display = 'none';
-        document.getElementById('output-text').value = "";
-        document.getElementById('status').innerText = "Waiting for image...";
-        document.getElementById('progress-bar').style.width = "0%";
-        document.getElementById('copy-btn').disabled = true;
     }
 </script>
 
