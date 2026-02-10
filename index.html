@@ -128,12 +128,74 @@
 </div>
 
 <script>
-    // --- 1. CORE LOGIC: THE MON FIXER ---
     function fixMonScript(text) {
-        if (!text) return "";
-        let fixed = text;
+    if (!text) return "";
+    let fixed = text;
 
-        console.log("Original Tesseract Output:", text);
+    // 1. Context-Specific Fixes (Mangala Sutta / Religious Text)
+    const contextFixes = [
+        { w: "ကမ္ပန္ဘား", r: "ကမၠောန်" },
+        { w: "ကမ္ဘောနိ", r: "ကမၠောန်" },
+        { w: "ကမ္ဘှောနိ", r: "ကမၠောန်" },
+        { w: "ကမှှောန်", r: "ကမၠောန်" },
+        { w: "က္ခာနိ", r: "ကမၠောန်" }, // Extreme corruption
+        { w: "အနာကုလာ", r: "အနာကုလာ" },
+        { w: "မ္ဂှ်ျမပြဲ", r: "မင်္ဂလမပြဲ" },
+        { w: "မင်္ဂလမုတ္တမံ", r: "မင်္ဂလမုတ္တမံ" },
+        { w: "တာလျိုၚ်", r: "တာလျိုင်" },
+        { w: "ခရော်ထဝ်", r: "ခရော်ထဝ်" }, // Golden Bowl
+        { w: "ဒေဝဒတ်", r: "ဒေဝဒတ်" },
+        { w: "မ္စိဟ်", r: "မၞိဟ်" } // Human
+    ];
+
+    contextFixes.forEach(item => {
+        let regex = new RegExp(item.w, "g");
+        fixed = fixed.replace(regex, item.r);
+    });
+
+    // 2. Grammar & Particle Fixes (The most common Mon errors)
+    fixed = fixed
+        // Fix "Work" (General Pattern: က + something + ာန်)
+        .replace(/ကမ္[ဘဗ][ာ-၉]+န[ိ်]/g, "ကမၠောန်") 
+        
+        // Fix "Not" (ဟၞံ -> ဟွံ)
+        .replace(/ဟၞံ/g, "ဟွံ")
+        .replace(/ဟံၞ/g, "ဟွံ")
+
+        // Fix "Done/Then" (တဲ် -> တုဲ)
+        .replace(/တဲ်/g, "တုဲ")
+        .replace(/တဲံ/g, "တုဲ")
+
+        // Fix "To/Get" (ကို -> ကဵု or ဂွံ)
+        // Context: "ဟွံဂွံ" (Not get) vs "ကဵုညး" (To person)
+        .replace(/ဟွံကို/g, "ဟွံဂွံ") 
+        .replace(/ညးကိုညး/g, "ညးကဵုညး")
+        .replace(/ကိုဒုဟ်/g, "ကဵုဒုဟ်")
+
+        // Fix standard Myanmar misreads
+        .replace(/င/g, "ၚ") 
+        .replace(/ၺ/g, "ည")
+        .replace(/ဂ်/g, "ဂှ်")
+        .replace(/ဒ််/g, "ဒှ်")  // Very common in your text
+        .replace(/ဏံ/g, "ဏအ်")
+        .replace(/ရး/g, "ရ။")  // End of sentence
+        .replace(/ရႈ/g, "ရ။")
+        .replace(/။။/g, "။");
+
+    // 3. Garbage Cleanup (Remove numbers/symbols causing noise)
+    const lines = fixed.split('\n');
+    const cleanLines = lines.map(line => {
+        // Remove patterns like "3) .&1189"
+        return line.replace(/^[0-9\)\.\&\s]+/, "");
+    }).filter(line => {
+        let s = line.trim();
+        // Keep line if it has at least 3 Mon characters
+        let monChars = (s.match(/[က-အ]/g) || []).length;
+        return monChars > 3;
+    });
+
+    return cleanLines.join('\n');
+}
 
         // Dictionary: Common Tesseract Errors -> Correct Mon Words
         // Note: Tesseract 'mya' often mistakes Mon 'ဍ' for 'ချ' or 'ဗ'
