@@ -131,4 +131,53 @@
         const fixes = [
             { w: "ကမ္ပန္ဘား", r: "ကမၠောန်" },
             { w: "ကမ္ဘောနိ", r: "ကမၠောန်" },
-            { w: "ကမ္ဘှောနိ",
+            { w: "ကမ္ဘှောနိ", r: "ကမၠောန်" },
+            { w: "က္ခာနိ", r: "ကမၠောန်" },
+            { w: "ကမၠောနိ", r: "ကမၠောန်" },
+            { w: "မ္စိဟ်", r: "မၞိဟ်" },
+            { w: "တာလျိုၚ်", r: "တာလျိုင်" },
+            { w: "အနာကုလာ", r: "အနာကုလာ" },
+            { w: "ခရော်ထဝ်", r: "ခရော်ထဝ်" },
+            { w: "ဒေဝဒတ်", r: "ဒေဝဒတ်" },
+            { w: "မ္ဂှ်ျမပြဲ", r: "မင်္ဂလမပြဲ" }
+        ];
+
+        fixes.forEach(fix => {
+            t = t.replace(new RegExp(fix.w, "g"), fix.r);
+        });
+
+        // General Fixes
+        t = t
+            .replace(/ဟၞံ/g, "ဟွံ")
+            .replace(/ဟံၞ/g, "ဟွံ")
+            .replace(/တဲ်/g, "တုဲ")
+            .replace(/တဲံ/g, "တုဲ")
+            .replace(/ဒ််/g, "ဒှ်")
+            .replace(/ဒ်/g, "ဒှ်")
+            .replace(/ကို/g, "ကဵု") // Careful with this one
+            .replace(/ဟွံကို/g, "ဟွံဂွံ")
+            .replace(/င/g, "ၚ")
+            .replace(/ၺ/g, "ည")
+            .replace(/ဏံ/g, "ဏအ်")
+            .replace(/ရး/g, "ရ။")
+            .replace(/ရႈ/g, "ရ။");
+
+        // Filter Garbage Lines
+        return t.split('\n').filter(line => {
+            let clean = line.trim();
+            let monChars = (clean.match(/[က-အ]/g) || []).length;
+            return monChars > 2; // Keep lines with at least 3 Mon chars
+        }).join('\n');
+    }
+
+    // 4. Copy Function
+    function copyText() {
+        const output = document.getElementById('output');
+        output.select();
+        document.execCommand('copy');
+        alert("Copied to Clipboard!");
+    }
+</script>
+
+</body>
+</html>
