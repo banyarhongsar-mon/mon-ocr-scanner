@@ -4,74 +4,126 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mon OCR Scanner - ဗညာဟံသာ</title>
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://unpkg.com/tesseract.js@v5.0.0/dist/tesseract.min.js"></script>
     <style>
-        body { font-family: sans-serif; background: #f4f4f9; text-align: center; padding: 20px; }
-        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 12px; shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        h1 { color: #2c3e50; }
-        #preview { width: 100%; max-height: 300px; margin-top: 10px; display: none; border-radius: 8px; }
-        .btn-group { margin: 20px 0; }
-        button { background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; }
-        button:hover { background: #2980b9; }
-        #output { width: 100%; height: 200px; margin-top: 20px; padding: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 18px; line-height: 1.6; }
-        .status { color: #e67e22; font-weight: bold; margin-top: 10px; }
+        body { font-family: 'Pyidaungsu', sans-serif; background: #eef2f3; padding: 20px; text-align: center; }
+        .main-card { max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        h2 { color: #2c3e50; margin-bottom: 20px; }
+        #image-preview { width: 100%; border-radius: 10px; margin-bottom: 15px; display: none; border: 2px solid #ddd; }
+        .upload-btn { background: #1abc9c; color: white; padding: 12px 25px; border: none; border-radius: 30px; cursor: pointer; font-size: 16px; transition: 0.3s; }
+        .upload-btn:hover { background: #16a085; }
+        #status { margin: 15px 0; color: #e67e22; font-weight: bold; }
+        #result-area { width: 100%; height: 250px; margin-top: 15px; padding: 15px; border: 1.5px solid #bdc3c7; border-radius: 8px; font-size: 17px; background: #fafafa; line-height: 1.8; resize: vertical; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>Mon OCR Scanner</h1>
-    <p>ဓရီုကျာကဵု AI တုဲ ကလေၚ်စပရောဂျေတ်မန်</p>
-    
-    <input type="file" id="file-input" accept="image/*" style="display:none">
-    <div class="btn-group">
-        <button onclick="document.getElementById('file-input').click()">ရုဲစှ်ရုပ် (Pick Image)</button>
-    </div>
+<div class="main-card">
+    <h2>Mon OCR Scanner </h2>
 
-    <img id="preview" alt="Preview">
-    <div id="status" class="status"></div>
+    <input type="file" id="image-input" accept="image/*" style="display:none">
+    <button class="upload-btn" onclick="document.getElementById('image-input').click()">ရုဲစှ်ရုပ် (Select Image)</button>
+
+    <div id="status">အဆေအ်မံၚ်... (Ready)</div>
+    <img id="image-preview" src="">
     
-    <textarea id="output" placeholder="လိခ်မန် Scan တုဲတအ်ဏအ် မံၚ်ဒၞာဲဏအ်ရ..."></textarea>
+    <textarea id="result-area" placeholder="လိခ် Scan တုဲတအ်ဏအ် မံၚ်ဒၞာဲဏအ်ရ..."></textarea>
 </div>
 
 <script>
-    const fileInput = document.getElementById('file-input');
-    const preview = document.getElementById('preview');
-    const output = document.getElementById('output');
+    const imageInput = document.getElementById('image-input');
+    const imagePreview = document.getElementById('image-preview');
     const status = document.getElementById('status');
+    const resultArea = document.getElementById('result-area');
 
-    fileInput.onchange = e => {
+    imageInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
-        if (file) {
-            preview.src = URL.createObjectURL(file);
-            preview.style.display = 'block';
-            recognizeText(file);
+        if (!file) return;
+
+        // ထ္ၜးရုပ် Preview
+        imagePreview.src = URL.createObjectURL(file);
+        imagePreview.style.display = 'block';
+        
+        status.innerText = "စၟဳစၟတ်မံၚ်... (Scanning...)";
+        resultArea.value = "";
+
+        try {
+            // သုၚ်စောဲ Tesseract v5 နကဵုဘာသာဗၟာ (mya)
+            const { data: { text } } = await Tesseract.recognize(file, 'mya', {
+                logger: m => {
+                    if (m.status === 'recognizing text') {
+                        status.innerText = `Scan မံၚ်: ${Math.round(m.progress * 100)}%`;
+                    }
+                }
+            });
+
+            // သုၚ်စောဲ Logic မဘိုၚ်ပလေဝ်လိခ်မန် (Mon Correction Logic)
+            const cleanedText = fixMonScript(text);
+            resultArea.value = cleanedText;
+            status.innerText = "တုဲဒှ်ရ! (Success)";
+
+        } catch (error) {
+            console.error(error);
+            status.innerText = "Error: " + error.message;
         }
-    };
+    });
 
-    async function recognizeText(file) {
-        status.innerText = "စၟဳစၟတ်မံၚ်လိခ်... (Processing)";
+    // ==========================================
+    // MON SCRIPT CORRECTION LOGIC (ALL IN ONE)
+    // ==========================================
+    function fixMonScript(input) {
+        let correctedText = input;
         
-        // သုၚ်စောဲ Tesseract နကဵုဘာသာဗၟာ (Burmese) ကၠာ 
-        // တုဲမ္ဂး ပိုဲကလေၚ်ပလေဝ်နကဵု Logic မန်
-        const worker = await Tesseract.createWorker('mya'); 
-        const { data: { text } } = await worker.recognize(file);
-        
-        // Mon Script Correction Logic
-        let monText = fixMonScript(text);
-        
-        output.value = monText;
-        status.innerText = "တုဲဒှ်ရ! (Finished)";
-        await worker.terminate();
-    }
+        // ၁။ ပလေဝ် ဝေါဟာရ ဗၠေတ်ကိစ္စဇၞော်တအ် (Words Level Dictionary)
+        const dictionary = {
+            // "သမ္တီ" ဂကောံမဗၠေတ်ဂၠိုၚ်တအ်
+            "သမ္တို": "သမ္တီ",
+            "သမ္တီု": "သမ္တီ",
+            "သမ္တို့": "သမ္တီ",
+            
+            // "ပတှ်ေ" ဂကောံမဗၠေတ်ဂၠိုၚ်တအ်
+            "ပတှေိ": "ပတှ်ေ",
+            "ပတ္ဒ်ေ": "ပတှ်ေ",
+            "၀တှေ": "ပတှ်ေ",
+            "ဓတှီ": "ပတှ်ေ",
+            "ပတှေေ့": "ပတှ်ေ",
+            "ပတှေဟ်": "ပတှ်ေ",
+            "ပတှေ": "ပတှ်ေ",
+            
+            // "တွံပညာ" ဂကောံမဗၠေတ်ဂၠိုၚ်တအ်
+            "တွပံညာ": "တွံပညာ",
+            "းတွပညာ": "တွံပညာ",
+            "တွ္ဗပညာ": "တွံပညာ",
+            "တွပညာ": "တွံပညာ",
+            
+            // ဝေါဟာရတၞဟ်ဟ် မဗၠေတ်စွံလဝ်
+            "လဲာ": "လာဲ",
+            "စိုတ်စ္တာဲ႔": "စိုတ်ဆာဲ",
+            "ဇေတ်တ်": "ဇေတ်တ်"
+        };
 
-    function fixMonScript(rawText) {
-        return rawText
-            .replace(/င/g, "ၚ")      // Burmese Nga to Mon Nga
-            .replace(/ၚ်/g, "ၚ်")     // Ensure correct Nga-Gak
-            .replace(/း/g, "း")       // Visarga
-            .replace(/၀/g, "၀");      // Zero
-            // ဗှ်ေထပ်စုတ် Logic ဗၠေတ်ဗၠေတ် ဒၞာဲဏအ်ဂွံတွဵုရ
+        // ကသဳစက် Dictionary တုဲ Replace ကၠောန်အာ
+        for (let wrongWord in dictionary) {
+            let correctWord = dictionary[wrongWord];
+            // RegExp နကဵု 'g' မ္ဂး ဍေံပလေဝ်ကဵု အလုံမွဲမုက်လိခ်ရ
+            let regex = new RegExp(wrongWord, "g");
+            correctedText = correctedText.replace(regex, correctWord);
+        }
+
+        // ၂။ ပလေဝ် အက္ခရ်မန် သဇိုၚ် (Character Level - အရာနူ Code တြေံ)
+        correctedText = correctedText
+            .replace(/င/g, "ၚ")         // ဗၟာ 'င' ပြံၚ်ကဵု 'ၚ' (Nga)
+            .replace(/ၚ်/g, "ၚ်")        // ပလေဝ် Nga-Gak (Unicode Sequence)
+            .replace(/ၞ/g, "ၞ")         // Na-Hta
+            .replace(/ၟ/g, "ၟ")         // Ma-Hta
+            .replace(/ှ/g, "ှ")         // Ha-Htoe
+            .replace(/ြ/g, "ြ")         // Ya-Yit
+            .replace(/ု/g, "ု")         // U
+            .replace(/ူ/g, "ူ")         // UU
+            .replace(/း/g, "း")         // Visarga (ဝိသဇ္ဇနဳ)
+            .replace(/၀/g, "၀");        // Zero (သုည)
+
+        return correctedText;
     }
 </script>
 
